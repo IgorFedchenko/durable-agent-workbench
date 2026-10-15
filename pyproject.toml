@@ -12,6 +12,9 @@ dependencies = [
 ]
 [project.scripts]
 workbench = "agent_workbench.cli:main"
+[project.entry-points.pytest11]
+workbench_policy = "agent_workbench.pytest_policy"
+
 [dependency-groups]
 dev = ["pytest>=8.3,<10", "pytest-timeout>=2.3,<3", "httpx>=0.28,<1", "playwright>=1.50,<2", "ruff>=0.11,<1", "mypy>=1.15,<2", "pillow>=11,<13", "bandit>=1.8,<2"]
 [build-system]
@@ -35,4 +38,5 @@ strict = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 timeout = 180
+xfail_strict = true
 markers = ["docker: real Docker boundary", "e2e: real browser and server"]

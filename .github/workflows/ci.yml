@@ -51,7 +51,7 @@ jobs:
         run: python3 scripts/build_sandbox.py
       - if: matrix.job == 'browser-e2e'
         run: uv run playwright install --with-deps chromium
-      - run: uv run pytest ${{ matrix.path }} --junitxml=reports/${{ matrix.job }}.xml
+      - run: uv run pytest -p workbench_policy ${{ matrix.path }} --junitxml=reports/${{ matrix.job }}.xml
       - if: matrix.job == 'offline-golden'
         run: uv run workbench --data .workbench/ci-evals eval --output reports/benchmark.json
       - if: always()

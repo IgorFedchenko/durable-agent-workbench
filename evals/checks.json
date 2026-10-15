@@ -20,6 +20,7 @@
       "tests/unit/test_contracts.py::test_default_offline_and_live_opt_in",
       "tests/unit/test_contracts.py::test_injection_through_compaction",
       "tests/unit/test_contracts.py::test_judge_disagreement_cannot_override_deterministic_gate",
+      "tests/unit/test_contracts.py::test_mandatory_xfail_policy",
       "tests/unit/test_contracts.py::test_negative_protocol_controls",
       "tests/unit/test_contracts.py::test_offline_judge_rubric_schema_provenance",
       "tests/unit/test_contracts.py::test_output_limit_sent_to_sdk[anthropic]",

@@ -1030,3 +1030,31 @@ def test_sdk_engine_retry_ledger_one_for_one(store, mode):
     )
     assert rows[1]["state"] == "settled" and rows[1]["charged_tokens"] == 10
     assert rows[0]["id"] != rows[1]["id"] and rows[0]["charged_cost"] > rows[1]["charged_cost"]
+
+
+def test_nested_reviewer_provider_redaction(store, caplog):
+    from agent_workbench.providers.scripted import ScriptedProvider
+
+    caplog.set_level(logging.INFO, logger="workbench")
+    canary = "SYNTHETIC_NESTED_PROVIDER_AUTH_BODY_456789"
+    base = ScriptedProvider(ROOT / "recordings/total.json")
+
+    class NestedFailure:
+        def turn(self, system, messages, **kwargs):
+            if kwargs["role"] == "reviewer":
+                raise RuntimeError(canary)
+            return base.turn(system, messages, **kwargs)
+
+    engine = Engine(store, provider=NestedFailure())
+    root = engine.create("Nested redaction fixture", RunConfig(scenario="total"))
+    with pytest.raises(RuntimeError, match=canary):
+        engine.resume(root)
+    engine.tracer_provider.force_flush()
+    spans = (store.directory / "traces.jsonl").read_text()
+    assert "reviewer_child" in spans and "RuntimeError" in spans
+    assert (
+        canary not in spans
+        and canary not in caplog.text
+        and canary not in json.dumps(engine.snapshot(root))
+    )
+    assert store.run(root)["error"] == "RuntimeError" and store.report(root) is None

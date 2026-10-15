@@ -70,6 +70,7 @@
       "tests/integration/test_durability.py::test_missing_or_rejected_verdict_rejected",
       "tests/integration/test_durability.py::test_missing_price_model_output_cap_fails_closed",
       "tests/integration/test_durability.py::test_missing_usage_is_conservative",
+      "tests/integration/test_durability.py::test_nested_reviewer_provider_redaction",
       "tests/integration/test_durability.py::test_preintent_staging_kill_cleanup",
       "tests/integration/test_durability.py::test_publication_crash_atomicity",
       "tests/integration/test_durability.py::test_publication_evidence_binding",

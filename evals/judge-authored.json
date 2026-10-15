@@ -1,0 +1,1 @@
+{"correctness":4,"evidence":4,"clarity":3,"safety":4,"explanation":"Author-written rubric fixture. This validates schema and provenance plumbing, not model judgment.","provenance":"author-written-scripted","model":"author-written-judge-v1","prompt_hash":"$prompt_hash"}

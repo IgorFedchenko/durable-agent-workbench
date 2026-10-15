@@ -1,0 +1,89 @@
+name: CI
+on: [push, pull_request]
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
+        with:
+          python-version: '3.12'
+          enable-cache: true
+      - run: uv sync --frozen --group dev
+      - run: uv run ruff check src scripts tests
+      - run: uv run ruff format --check src scripts tests
+      - run: uv run mypy src
+  systems:
+    name: ${{ matrix.job }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - job: unit-contracts
+            path: tests/unit
+            docker: false
+          - job: durability-integration
+            path: tests/integration
+            docker: true
+          - job: sandbox-boundaries
+            path: tests/sandbox
+            docker: true
+          - job: browser-e2e
+            path: tests/e2e
+            docker: true
+          - job: offline-golden
+            path: tests/evals
+            docker: true
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
+        with:
+          python-version: '3.12'
+          enable-cache: true
+      - run: uv sync --frozen --group dev
+      - if: matrix.docker
+        run: python3 scripts/build_sandbox.py
+      - if: matrix.job == 'browser-e2e'
+        run: uv run playwright install --with-deps chromium
+      - run: uv run pytest ${{ matrix.path }} --junitxml=reports/${{ matrix.job }}.xml
+      - if: matrix.job == 'offline-golden'
+        run: uv run workbench --data .workbench/ci-evals eval --output reports/benchmark.json
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: checks-${{ matrix.job }}
+          path: reports/
+          if-no-files-found: error
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: '1.24'
+      - run: go install github.com/zricethezav/gitleaks/v8@v8.24.3
+      - run: gitleaks git --redact --no-banner
+      - run: gitleaks dir --redact --no-banner .
+  acceptance-gate:
+    if: always()
+    needs: [quality, systems, secret-scan]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Require every job success
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: python3 -c 'import json,os; assert all(v["result"]=="success" for v in json.loads(os.environ["RESULTS"]).values())'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: checks-*
+          path: reports
+      - run: python3 scripts/check_acceptance.py reports

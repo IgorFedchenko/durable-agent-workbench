@@ -1,0 +1,39 @@
+# Architecture
+
+The trusted host control plane is a small explicit state machine: loopback HTTP/CLI → root owner → provider → static tools → Docker → SQLite evidence → reviewer → publication. The model cannot choose an image, host path, environment variable, Docker flag or a new capability. No orchestration framework or external service is needed to replay the debugger.
+
+## State and ownership
+
+SQLite uses WAL and immediate transactions for shared budgets and publication. A local filesystem `fcntl.flock` is held for the full root execution, including recovery and reviewer work. The lock file is never unlinked, and its close-on-exec descriptor is not inherited. A stalled worker keeps ownership; stop it before resuming. Network filesystems and distributed workers are unsupported.
+
+Decisions are persisted before tool dispatch. Calls use `(run_id, call_id)` plus an argument hash; changed arguments under the same ID are rejected. A corrected program uses a new call. Completed results replay without tool execution. Pure computation can replay after an ambiguous crash. Tool retries consume aggregate steps and stop after three attempts per call. Provider transient retries consume a fresh reservation and use bounded exponential backoff. Refusals, malformed responses, unknown tools, truncation and parallel calls fail clearly instead of executing partial output.
+
+A container's random attempt name and root/call labels are persisted before creation. Recovery first acquires root ownership, then checks immutable compatibility, then removes only that root's previously recorded labeled containers and staging directories. No broad prune operation exists. A killed worker can leave a container until an operator explicitly resumes the run.
+
+## Evidence and publication
+
+Only successful analysis is stored as evidence. Each immutable artifact has a root ID, dataset hash, call ID, canonical JSON and content hash. The reviewer has a distinct persisted child ID and system prompt; its context only allows `read_evidence`. It cannot analyze, publish or delegate. At most three reviewer turns execute, under shared root ceilings.
+
+Publication requires a persisted accepting child verdict over the referenced evidence. Every numeric fact and chart point resolves to a finite structured numeric field of root-owned, dataset-bound analysis and must match within absolute tolerance 1e-6. Chart labels match cited series keys. Pydantic rejects uncited numeric fields and unknown schema fields. Prose is escaped but is not universally fact-checked.
+
+A stable root publication key, report row, completed publication result and root completion status commit together in one SQLite transaction. Repeated identical publication returns the same key; a changed report is rejected. This is a claim about the local SQLite report, not general exactly-once external side effects or universal truth of arbitrary calculations. Independent golden values detect consistently wrong analysis even when the authored reviewer agrees.
+
+## Manifest and context
+
+The immutable manifest records state schema, behavior and package version, source fingerprint, resolved Docker image ID, prompt names/hashes, dataset/recording/config hashes, mode/model and configured prices. Source fingerprints include dirty product files, not merely the last Git SHA. Incompatible resume names the changed fields and requires a new run; no force/migration override exists. An unchanged image tag with a new image ID is incompatible.
+
+Context estimates use one UTF-8 byte per token, intentionally conservative. The prompt, tool schemas, messages and reserved output must fit the configured context and input caps. Compaction replaces completed conversation pairs with a typed task/evidence summary carrying root/dataset identity and untrusted provenance. It never copies dataset strings into system instructions or grants tools. `read_evidence` resolves old artifacts after compaction. Scripted usage is authored synthetic accounting, distinct from this conservative admission estimate.
+
+## Budgets
+
+Every provider transport attempt reserves worst-case configured input/output tokens and prices in SQLite before dispatch. SDK automatic retries are disabled. The parent, child and retries share frozen root ceilings. Money is rounded upward to nanodollars for reservation/settlement; cost admission compares decimal amounts. Missing live model/prices/output bounds reject before transport. Prices are application configuration, not a billing guarantee.
+
+Unknown/missing usage or a crash after reservation retains the full reservation, shown as ambiguous. Unknown outcomes never refund. Known usage settles once; conflicting resettlement rejects. Actual usage above the configured cap is preserved, marked as an overrun and blocks more spending. A paid request may have reached the provider before a process died; resuming may create another paid request. This uncertainty is visible in the ledger.
+
+An aggregate **step** is one provider transport attempt or one newly executed tool attempt, including reviewer work, failed attempts and recovery computation. Reading/replaying a completed result is not a new execution step. Root steps are durably counted alongside reservations/tool dispatch. Golden limits are 24 steps, 20,000 synthetic tokens and 180 seconds per case.
+
+## Observability and web
+
+The local journal stores the inspectable timeline. Structured exported logs contain only allowlisted IDs, step/attempt counts, categories, timing and usage metadata. Real OpenTelemetry spans cover run/provider/tool/reviewer parentage and export to `.workbench/traces.jsonl`. Raw prompts/data and SDK exception bodies are excluded from exported telemetry. Optional OTLP accepts explicit loopback HTTP only; no default cloud telemetry.
+
+FastAPI binds 127.0.0.1. Expected Host authorities are exact `127.0.0.1:<port>` and `localhost:<port>`. Mutations require exact same-origin Origin plus a per-session CSRF token; cookies are HttpOnly/SameSite Strict. No omitted-Origin bypass exists. Requests cannot select live providers, images, paths or prices. Each execution is a separate subprocess; read-only timeline polling never executes tools. Jinja autoescaping, textContent rendering and CSP prohibit raw model HTML/SVG. Trusted chart code uses validated numeric points.

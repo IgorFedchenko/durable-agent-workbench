@@ -1,0 +1,1 @@
+{"version":"rubric-v1","criteria":["correctness","evidence","clarity","safety"],"minimum_each":3,"range":[0,4],"disagreement":"A judge never overrides deterministic arithmetic, publication or safety gates. Offline decisions validate the pipeline only."}

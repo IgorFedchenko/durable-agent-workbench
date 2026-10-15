@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.workbench/
+.env
+.env.*
+!.env.example
+build/
+dist/
+*.egg-info/
+test-results/
+playwright-report/

@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "provenance": "AUTHOR-WRITTEN SCRIPTED RECORDING; never paid model output",
+  "scenario": "compaction",
+  "parent": [
+    {
+      "decision": {
+        "kind": "tool",
+        "id": "inspect-1",
+        "name": "inspect_dataset",
+        "arguments": {}
+      },
+      "usage": {
+        "input_tokens": 140,
+        "output_tokens": 100,
+        "synthetic": true
+      }
+    },
+    {
+      "decision": {
+        "kind": "tool",
+        "id": "analysis-1",
+        "name": "analyze",
+        "arguments": {
+          "code": "# Earlier authored working notes: synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. synthetic context. \nimport csv, json\nfrom collections import defaultdict\nwith open(DATASET, newline=\"\") as f:\n    rows = list(csv.DictReader(f))\n\nregions = defaultdict(float)\nmonths = defaultdict(float)\ntotal = 0.0\nfor row in rows:\n    revenue = int(row[\"units\"]) * float(row[\"unit_price\"])\n    total += revenue\n    regions[row[\"region\"]] += revenue\n    months[row[\"month\"]] += revenue\nprint(json.dumps({\"total\": total, \"orders\": len(rows), \"regions\": dict(regions), \"months\": dict(months)}))\n"
+        }
+      },
+      "usage": {
+        "input_tokens": 140,
+        "output_tokens": 100,
+        "synthetic": true
+      }
+    },
+    {
+      "decision": {
+        "kind": "tool",
+        "id": "retrieve-early",
+        "name": "read_evidence",
+        "arguments": {
+          "evidence_id": "$analysis"
+        }
+      },
+      "usage": {
+        "input_tokens": 140,
+        "output_tokens": 100,
+        "synthetic": true
+      }
+    },
+    {
+      "decision": {
+        "kind": "tool",
+        "id": "review-1",
+        "name": "review",
+        "arguments": {
+          "evidence_id": "$analysis"
+        }
+      },
+      "usage": {
+        "input_tokens": 140,
+        "output_tokens": 100,
+        "synthetic": true
+      }
+    },
+    {
+      "decision": {
+        "kind": "tool",
+        "id": "publish-1",
+        "name": "publish",
+        "arguments": {
+          "title": "Synthetic retail revenue",
+          "explanation": "Revenue is units multiplied by unit price. Values are bound to immutable analysis evidence. This workflow uses author-written scripted provider responses.",
+          "facts": [
+            {
+              "label": "Revenue",
+              "value": 175.0,
+              "citation": {
+                "evidence_id": "$analysis",
+                "field": "total"
+              }
+            },
+            {
+              "label": "Orders",
+              "value": 6.0,
+              "citation": {
+                "evidence_id": "$analysis",
+                "field": "orders"
+              }
+            }
+          ],
+          "chart": [],
+          "no_data": false
+        }
+      },
+      "usage": {
+        "input_tokens": 140,
+        "output_tokens": 100,
+        "synthetic": true
+      }
+    }
+  ],
+  "reviewer": [
+    {
+      "decision": {
+        "kind": "tool",
+        "id": "review-read",
+        "name": "read_evidence",
+        "arguments": {
+          "evidence_id": "$analysis"
+        }
+      },
+      "usage": {
+        "input_tokens": 140,
+        "output_tokens": 100,
+        "synthetic": true
+      }
+    },
+    {
+      "decision": {
+        "kind": "final",
+        "answer": {
+          "accepted": true,
+          "evidence_ids": [
+            "$analysis"
+          ],
+          "reason": "Authored acceptance fixture: structured evidence has expected fields; deterministic golden checks independently verify arithmetic."
+        }
+      },
+      "usage": {
+        "input_tokens": 120,
+        "output_tokens": 60,
+        "synthetic": true
+      }
+    }
+  ]
+}

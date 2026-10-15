@@ -1,0 +1,7 @@
+id,month,region,product,units,unit_price,note
+1,2026-01,north,widget,2,10,synthetic
+2,2026-01,south,widget,1,10,synthetic
+3,2026-02,north,widget,3,10,synthetic
+4,2026-02,south,gadget,2,25,synthetic
+5,2026-03,north,gadget,1,25,synthetic
+6,2026-03,south,widget,4,10,synthetic

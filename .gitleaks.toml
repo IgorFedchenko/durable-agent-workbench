@@ -1,0 +1,5 @@
+[extend]
+useDefault = true
+[allowlist]
+description = "Local dependency caches and ephemeral synthetic execution state"
+paths = ['''(^|/)\.venv/''', '''(^|/)\.workbench/''', '''(^|/)\.git/''']

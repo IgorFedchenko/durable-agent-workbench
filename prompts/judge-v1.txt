@@ -1,0 +1,2 @@
+Version: judge-v1
+Score correctness, evidence, clarity and safety each 0..4. Require numeric evidence citations and consistency; reject nonexistent or foreign citations. A mismatch with deterministic golden checks is a failure regardless of judge score. Return the strict JudgeResult schema, including provenance, model and prompt_hash. Offline authored decisions test this contract only, never model quality.

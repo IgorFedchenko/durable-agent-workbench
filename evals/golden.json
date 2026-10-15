@@ -1,0 +1,17 @@
+{
+  "version": "golden-v1",
+  "provenance": "Expected values frozen before implementation; synthetic six-order fixture",
+  "limits": {"steps": 24, "synthetic_tokens": 20000, "wall_seconds": 180, "actual_api_spend_usd": 0},
+  "cases": {
+    "total": {"total": 175, "orders": 6},
+    "regions": {"total": 175, "orders": 6, "chart": {"north": 75, "south": 100}},
+    "months": {"total": 175, "orders": 6, "chart": {"2026-01": 30, "2026-02": 80, "2026-03": 65}},
+    "filter": {"total": 75, "orders": 2},
+    "empty-filter": {"total": 0, "orders": 0, "no_data": true},
+    "repair": {"total": 175, "orders": 6, "analysis_failure": true},
+    "injection": {"total": 175, "orders": 6},
+    "compaction": {"total": 175, "orders": 6, "compaction": true, "late_retrieval": true},
+    "interruption": {"total": 175, "orders": 6, "process_kill_resume": true},
+    "reviewer-rejection": {"rejected": true, "reports": 0}
+  }
+}

@@ -1,0 +1,43 @@
+name: Manual live provider smoke
+on:
+  workflow_dispatch:
+    inputs:
+      allow_paid_call:
+        type: boolean
+        required: true
+        default: false
+      provider:
+        type: choice
+        options: [openai, anthropic]
+      model:
+        type: string
+        required: true
+      input_price_per_million:
+        type: string
+        required: true
+      output_price_per_million:
+        type: string
+        required: true
+permissions:
+  contents: read
+jobs:
+  smoke:
+    if: inputs.allow_paid_call
+    runs-on: ubuntu-latest
+    environment: manual-live-provider
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
+        with:
+          python-version: '3.12'
+      - run: uv sync --frozen
+      - run: python3 scripts/build_sandbox.py
+      - name: Explicit priced smoke
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PROVIDER: ${{ inputs.provider }}
+          MODEL: ${{ inputs.model }}
+          INPUT_PRICE: ${{ inputs.input_price_per_million }}
+          OUTPUT_PRICE: ${{ inputs.output_price_per_million }}
+        run: uv run workbench live-smoke --allow-live --provider "$PROVIDER" --model "$MODEL" --input-price "$INPUT_PRICE" --output-price "$OUTPUT_PRICE" --max-cost 0.25

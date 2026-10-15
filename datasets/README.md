@@ -1,0 +1,1 @@
+All rows are invented for this project. Revenue means units × unit_price, with no tax or currency conversion. The six rows total 175. An injection fixture changes only the note field. No personal, customer, or employer data is used.

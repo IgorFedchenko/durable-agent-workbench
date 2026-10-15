@@ -1,0 +1,23 @@
+# Evaluation contract
+
+Default responses are **AUTHOR-WRITTEN SCRIPTED RECORDINGS**, not captured paid-model output. The engine, Docker, SQLite, HTTP, chart and process recovery are real. These scenarios measure deterministic systems outcomes. They do not measure live-model intelligence, accuracy, judge quality or provider latency.
+
+`evals/golden.json` contains expectations frozen before implementation: total 175 from six orders; north/south 75/100; January/February/March 30/80/65; gadget 75 from two orders; absent product 0/0 and no-data label. The mandatory scenarios are total, regions, months, filter, empty-filter, repair, injection, compaction, interruption and reviewer-rejection. Rejection passes the scenario gate only when publication fails with zero reports. Report count is separate from scenario outcome count.
+
+Run `make eval` against actual Docker. The runner executes all ten cases, including a separate worker SIGKILL after committed analysis and a replacement process over the same database. It verifies completed analysis does not relaunch. The emitted JSON includes each immutable manifest, scenario observations, failures, synthetic token/root-step totals, $0 actual API spend, measured wall latency and process recovery evidence. Code/source, image, prompt, recording, config and dataset hashes identify what ran. A run is not a baseline merely because it produced a file.
+
+The acceptance gate requires ten of ten expected outcomes, at most 24 aggregate steps and 20,000 labeled synthetic tokens per case, and a 180-second case ceiling. Steps count provider attempts and new tool attempts across parent/reviewer/retries. Latency is measured on the executing host and is not a cross-host speed comparison. Missing, duplicate, skipped or timed-out mandatory cases fail. Independent tests calculate their own arithmetic from literal rows; they must not import expected answers from recordings.
+
+Safety/recovery checks and negative controls are also mandatory: consistently wrong 174 analysis despite agreeing scripted actors; altered/uncited/foreign numeric citations; rejected/missing reviewer; wrong call identity; forbidden/multiple calls; malformed/refused/truncated SDK output; absent live prices/usage; process ownership/crashes; effective Docker boundaries; web request protections and escaped rendering. `evals/checks.json` lists stable mandatory check IDs; CI verifies their execution and rejects skipped/error/zero-collection reports. Tests are developed independently from the golden specification.
+
+Four semantic verification mutations target ownership, publication evidence binding, durable reservation and runtime networking. Each must make its corresponding invariant assertion fail, then the restored check/full suite must pass. A syntax error or test collection failure is not a valid mutation kill.
+
+## Judge scope
+
+`workbench judge RUN_ID` validates a strict correctness/evidence/clarity/safety rubric using an authored offline fixture. Provenance includes judged report/dataset hashes, rubric/prompt hash, decision hash, model identity and bounded scores. It validates rubric/schema/provenance plumbing only. Judge scores never override deterministic arithmetic, publication or safety gates; disagreements remain separate results.
+
+Optional live judging and provider smoke require explicit flags, environment keys, exact model and configured prices/output/spend bounds. Until separately executed, both SDK adapters and live judge are **contract-tested / live-unverified**. Provider-shaped tests run pinned official SDK serialization and response parsing through local synthetic HTTP transports. They are not paid provider calls.
+
+## CI
+
+Named mandatory checks cover quality, unit-contracts, durability-integration, sandbox-boundaries, browser-e2e, offline-golden, secret-scan and acceptance-gate. Docker/browser jobs must execute real infrastructure and fail on missing prerequisites. GitHub Actions pins action SHAs and uses read-only repository permissions. Default CI never invokes a paid model. CodeQL is manual opt-in and depends on private-account availability; no paid security plan is enabled. Gitleaks scans local/CI history and files independently of native GitHub feature licensing.

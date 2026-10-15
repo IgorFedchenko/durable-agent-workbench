@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>Durable Agent Workbench</title>
+  <link rel="stylesheet" href="/static/style.css"><script src="/static/app.js" defer></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="/" aria-label="Workbench home"><span class="logo">d<span>·</span></span><span>durable<span class="brand-sub">AGENT WORKBENCH</span></span></a>
+    <div class="workspace-label">LOCAL WORKSPACE <span class="status-dot"></span></div>
+    <button id="new-run" class="new-run">＋ New analysis</button>
+    <p class="eyebrow sidebar-heading">RECENT RUNS</p><nav id="run-list" aria-label="Recent runs"></nav>
+    <div class="sidebar-footer"><span class="status-dot"></span> Local execution only<br><span class="muted">SQLite · Docker · OpenTelemetry</span><a href="https://github.com/IgorFedchenko/durable-agent-workbench" rel="noreferrer">Source & documentation ↗</a></div>
+  </aside>
+  <main>
+    <header><span class="breadcrumb">Workspace <span>/</span> Synthetic retail analysis</span><span class="pill">OFFLINE MODE</span></header>
+    <section class="intro"><p class="eyebrow">RELIABLE WORKFLOWS, VISIBLE AT EVERY STEP</p><h1>From question to <em>evidence.</em></h1><p class="lead">A recoverable agent workflow. Real isolated Python, an independent reviewer context,<br class="desktop"> and a report whose numbers must match its sources.</p></section>
+    <div class="provenance"><span class="info-icon">i</span><div><strong>AUTHOR-WRITTEN SCRIPTED RECORDINGS</strong><p>Provider responses and token counts are authored fixtures. Tools, sandbox, recovery and reports execute for real. $0 actual API spend; no live model quality claim.</p></div><span class="pill quiet">TRANSPARENT BY DESIGN</span></div>
+    <section id="composer" class="card composer"><div class="card-heading"><h2>Ask the dataset</h2><span class="muted">6 synthetic orders · CSV</span></div><label class="sr-only" for="question">Analysis question</label><textarea id="question" maxlength="1000">What is our total revenue? Check the calculation and cite the evidence.</textarea><div class="composer-bottom"><label>Scenario <select id="scenario"><option value="repair">Error repair + resume</option><option value="regions">Revenue by region</option><option value="months">Revenue by month</option><option value="compaction">Context compaction</option><option value="injection">Untrusted data</option><option value="reviewer-rejection">Reviewer rejection</option><option value="total">Total revenue</option><option value="filter">Gadget filter</option><option value="empty-filter">No matching orders</option><option value="interruption">Interruption</option></select></label><label class="checkbox"><input type="checkbox" id="pause" checked> Pause for explicit resume</label><button id="start" class="primary">Run example <span>↗</span></button></div><p class="caption">The scenario selects an authored workflow; arbitrary questions do not change scripted responses.</p></section>
+    <div id="notice" role="alert" hidden></div>
+    <section id="workspace" hidden>
+      <div class="run-heading"><div><p class="eyebrow">PERSISTED EXECUTION</p><h2 id="run-title">Analysis</h2><p id="run-id" class="mono muted"></p></div><div><span id="run-status" class="pill"></span><button id="resume" class="primary" hidden>Resume run →</button></div></div>
+      <div class="metrics"><div><span>ROOT STEPS</span><strong id="metric-steps">—</strong><small>parent + reviewer attempts</small></div><div><span>SYNTHETIC TOKENS</span><strong id="metric-tokens">—</strong><small id="usage-note">authored usage, shared ceiling</small></div><div><span>ACTUAL API SPEND</span><strong id="metric-cost">$0</strong><small>offline scripted provider</small></div><div><span>TOOL EXECUTION</span><strong id="metric-latency">—</strong><small>measured on this machine</small></div></div>
+      <div class="result-grid"><section class="card timeline-card"><div class="card-heading"><h2>Execution timeline</h2><span class="muted">Immutable journal</span></div><div id="timeline"></div></section><section class="card report-card"><div class="card-heading"><h2>Verified report</h2><span class="pill quiet">EVIDENCE BOUND</span></div><div id="report"><div class="empty-state"><span>⌁</span><h3>Evidence comes first.</h3><p>The report appears after successful analysis,<br> reviewer acceptance and citation validation.</p></div></div></section></div>
+      <details class="card manifest"><summary>Reproducibility manifest <span class="muted">image · data · prompts · code</span></summary><pre id="manifest"></pre></details>
+    </section>
+    <section class="how-grid" id="how"><div><span>01 / ISOLATE</span><h3>Run real Python</h3><p>Non-root Docker, no network, read-only inputs and bounded resources. No host fallback.</p></div><div><span>02 / RECOVER</span><h3>Keep durable state</h3><p>Persist decisions before dispatch. Resume under a process lock; reuse completed work.</p></div><div><span>03 / VERIFY</span><h3>Publish with evidence</h3><p>A bounded reviewer child checks the result. Every numeric field resolves to immutable output.</p></div></section>
+    <footer><span>A small, auditable state machine.</span><button id="benchmark-link">View offline evaluation ↗</button><span>v0.1.0 · MIT</span></footer>
+  </main>
+  <dialog id="benchmark-dialog"><div class="card-heading"><h2>Deterministic systems evaluation</h2><button id="close-dialog">Close ×</button></div><p>Authored workflows measure infrastructure behavior. They do not measure live model accuracy.</p><pre id="benchmark-content"></pre></dialog>
+</body>
+</html>

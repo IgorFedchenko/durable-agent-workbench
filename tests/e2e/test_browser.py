@@ -241,6 +241,12 @@ def test_web_loopback_host_origin_csrf(server, page):
             return exc.code, None
 
     valid = {"Host": host, "Origin": url, "X-CSRF-Token": token}
+    with urlopen(url + "/api/csrf", timeout=10) as fresh_session:
+        other_session_token = json.load(fresh_session)["token"]
+    assert other_session_token != token
+    with socket.socket() as wrong_interface:
+        wrong_interface.settimeout(1)
+        assert wrong_interface.connect_ex(("127.0.0.2", int(host.rsplit(":", 1)[1]))) != 0
     root = Engine(store).create("CSRF resume target", RunConfig(scenario="total"))
     before = (len(store.runs()), store.step_count(root))
     headers = [
@@ -253,6 +259,7 @@ def test_web_loopback_host_origin_csrf(server, page):
         {**valid, "Origin": ""},
         {**valid, "X-CSRF-Token": ""},
         {**valid, "X-CSRF-Token": "wrong"},
+        {**valid, "X-CSRF-Token": other_session_token},
     ]
     for path, body in [
         ("/api/runs", {"question": "q", "scenario": "total", "pause": False}),

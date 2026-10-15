@@ -12,6 +12,7 @@ quality:
 	$(UV) run ruff format --check src scripts tests
 	$(UV) run mypy src
 secrets:
+	$(UV) run python scripts/check_secret_detector.py
 	gitleaks git --redact --no-banner
 	gitleaks dir --redact --no-banner .
 test:

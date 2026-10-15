@@ -76,6 +76,7 @@ jobs:
         with:
           go-version: '1.24'
       - run: go install github.com/zricethezav/gitleaks/v8@v8.24.3
+      - run: python3 scripts/check_secret_detector.py
       - run: gitleaks git --redact --no-banner
       - run: gitleaks dir --redact --no-banner .
   acceptance-gate:

@@ -15,7 +15,7 @@ from .base import (
     parse_decision,
     usage_or_none,
 )
-from .schema import tools
+from .schema import request_payload
 
 
 class OpenAIProvider:
@@ -28,44 +28,9 @@ class OpenAIProvider:
     def turn(
         self, system: str, messages: list[dict[str, Any]], *, role: str, turn: int, output_cap: int
     ) -> Turn:
-        wire: list[dict[str, Any]] = [{"role": "system", "content": system}]
-        for item in messages:
-            if item["role"] == "assistant" and item.get("call"):
-                call = item["call"]
-                wire.append(
-                    {
-                        "role": "assistant",
-                        "content": None,
-                        "tool_calls": [
-                            {
-                                "id": call["id"],
-                                "type": "function",
-                                "function": {
-                                    "name": call["name"],
-                                    "arguments": json.dumps(call["arguments"]),
-                                },
-                            }
-                        ],
-                    }
-                )
-            elif item["role"] == "tool":
-                wire.append(
-                    {
-                        "role": "tool",
-                        "tool_call_id": item["call_id"],
-                        "content": json.dumps(item["content"]),
-                    }
-                )
-            else:
-                wire.append({"role": item["role"], "content": json.dumps(item["content"])})
+        payload = request_payload("openai", self.model, system, messages, role, output_cap)
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=wire,
-                max_completion_tokens=output_cap,
-                parallel_tool_calls=False,
-                tools=[{"type": "function", "function": t} for t in tools(role)],
-            )
+            response = self.client.chat.completions.create(**payload)
         except (APIConnectionError, APITimeoutError, RateLimitError) as exc:
             raise TransientProviderError(
                 "OpenAI transient transport failure; outcome uncertain"

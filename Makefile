@@ -1,11 +1,10 @@
 .PHONY: demo sandbox build quality test eval capture secrets
 UV ?= uv
-# On Studio set JOB='~/.local/bin/studio-heavy-run --' in your shell/make command.
-# demo.sh detects Studio and queues each heavy operation exactly once.
+# Optional generic command prefix, e.g. JOB="your-local-job-runner --".
 JOB ?=
 
 demo:
-	bash scripts/demo.sh
+	$(JOB) bash scripts/demo.sh
 sandbox build:
 	$(JOB) python3 scripts/build_sandbox.py
 quality:

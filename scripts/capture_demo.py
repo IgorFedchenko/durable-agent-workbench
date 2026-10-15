@@ -1,6 +1,6 @@
 """Capture actual local UI frames after the real browser/server/Docker journey.
 
-Run under the Studio heavy queue. Playwright Chromium must already be installed.
+Use your optional local command prefix. Playwright Chromium must already be installed.
 This script never fabricates UI or changes engine responses.
 """
 

@@ -15,7 +15,7 @@ from .base import (
     parse_decision,
     usage_or_none,
 )
-from .schema import tools
+from .schema import request_payload
 
 
 class AnthropicProvider:
@@ -28,54 +28,9 @@ class AnthropicProvider:
     def turn(
         self, system: str, messages: list[dict[str, Any]], *, role: str, turn: int, output_cap: int
     ) -> Turn:
-        wire: list[dict[str, Any]] = []
-        for item in messages:
-            if item["role"] == "assistant" and item.get("call"):
-                call = item["call"]
-                wire.append(
-                    {
-                        "role": "assistant",
-                        "content": [
-                            {
-                                "type": "tool_use",
-                                "id": call["id"],
-                                "name": call["name"],
-                                "input": call["arguments"],
-                            }
-                        ],
-                    }
-                )
-            elif item["role"] == "tool":
-                wire.append(
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "tool_result",
-                                "tool_use_id": item["call_id"],
-                                "content": json.dumps(item["content"]),
-                            }
-                        ],
-                    }
-                )
-            else:
-                wire.append({"role": item["role"], "content": json.dumps(item["content"])})
+        payload = request_payload("anthropic", self.model, system, messages, role, output_cap)
         try:
-            response = self.client.messages.create(
-                model=self.model,
-                system=system,
-                messages=wire,
-                max_tokens=output_cap,
-                tools=[
-                    {
-                        "name": t["name"],
-                        "description": t["description"],
-                        "input_schema": t["parameters"],
-                    }
-                    for t in tools(role)
-                ],
-                tool_choice={"type": "auto", "disable_parallel_tool_use": True},
-            )
+            response = self.client.messages.create(**payload)
         except (APIConnectionError, APITimeoutError, RateLimitError) as exc:
             raise TransientProviderError(
                 "Anthropic transient transport failure; outcome uncertain"

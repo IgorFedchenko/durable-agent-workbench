@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import logging
 import threading
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -12,6 +14,7 @@ from urllib.parse import urlparse
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor, SpanExporter, SpanExportResult
+from opentelemetry.trace import Status, StatusCode
 
 
 class LocalExporter(SpanExporter):
@@ -69,3 +72,19 @@ def log_event(kind: str, *, run_id: str, category: str = "info", **fields: Any) 
     logging.getLogger("workbench").info(
         json.dumps({"kind": kind, "run_id": run_id, "category": category, **safe})
     )
+
+
+@contextmanager
+def safe_span(
+    tracer: trace.Tracer, name: str, *, attributes: dict[str, Any]
+) -> Iterator[trace.Span]:
+    """Uniform metadata-only error policy, including nested reviewer executions."""
+    with tracer.start_as_current_span(
+        name, attributes=attributes, record_exception=False, set_status_on_exception=False
+    ) as span:
+        try:
+            yield span
+        except BaseException as exc:
+            span.set_attribute("error.category", type(exc).__name__)
+            span.set_status(Status(StatusCode.ERROR))
+            raise

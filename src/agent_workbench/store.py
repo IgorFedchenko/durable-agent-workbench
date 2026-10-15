@@ -210,10 +210,18 @@ class Store:
         return None
 
     def finish_call(self, run_id: str, call_id: str, result: dict[str, Any]) -> None:
-        with self.connect() as db:
+        encoded = canonical(result)
+        with self.transaction() as db:
+            call = db.execute(
+                "SELECT state,result FROM calls WHERE run_id=? AND call_id=?", (run_id, call_id)
+            ).fetchone()
+            if call is None:
+                raise BoundaryError("cannot complete an unknown call")
+            if call["state"] == "completed" and call["result"] != encoded:
+                raise BoundaryError("completed tool result is immutable")
             db.execute(
                 "UPDATE calls SET state='completed',result=? WHERE run_id=? AND call_id=?",
-                (canonical(result), run_id, call_id),
+                (encoded, run_id, call_id),
             )
 
     def add_evidence(self, run_id: str, call_id: str, body: dict[str, Any]) -> str:
@@ -285,7 +293,14 @@ class Store:
             row = db.execute("SELECT body FROM verdicts WHERE root_id=?", (root_id,)).fetchone()
         return json.loads(row[0]) if row else None
 
-    def publish(self, root_id: str, call_id: str, report: Report) -> dict[str, Any]:
+    def publish(
+        self,
+        root_id: str,
+        call_id: str,
+        report: Report,
+        *,
+        original_arguments: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         if self.run(root_id)["parent_id"] is not None:
             raise BoundaryError("child cannot publish")
         verdict = self.verdict(root_id)
@@ -312,8 +327,19 @@ class Store:
                 raise BoundaryError("report number differs from cited numeric evidence")
         body = report.model_dump()
         result = {"published": True, "report_key": root_id}
+        args_hash = object_hash(original_arguments if original_arguments is not None else body)
         self.checkpoint("publication_before_transaction", {"root_id": root_id})
         with self.transaction() as db:
+            call = db.execute(
+                "SELECT * FROM calls WHERE run_id=? AND call_id=?", (root_id, call_id)
+            ).fetchone()
+            if call is not None:
+                if call["name"] != "publish" or call["args_hash"] != args_hash:
+                    raise BoundaryError(
+                        "publication call ID collides with different tool or arguments"
+                    )
+                if call["state"] == "completed" and call["result"] != canonical(result):
+                    raise BoundaryError("completed publication result is immutable")
             old = db.execute("SELECT body_hash FROM reports WHERE root_id=?", (root_id,)).fetchone()
             if old and old[0] != object_hash(body):
                 raise BoundaryError("stable publication key already has a different report")
@@ -324,7 +350,7 @@ class Store:
             self.checkpoint("publication_uncommitted", {"root_id": root_id})
             db.execute(
                 "INSERT OR IGNORE INTO calls VALUES(?,?,?,?,?,?)",
-                (root_id, call_id, object_hash(body), "publish", "pending", None),
+                (root_id, call_id, args_hash, "publish", "pending", None),
             )
             db.execute(
                 "UPDATE calls SET state='completed',result=? WHERE run_id=? AND call_id=?",

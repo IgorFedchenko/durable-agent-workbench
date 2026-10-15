@@ -1,4 +1,4 @@
-"""Run under the host heavy-job queue; verify the remote BuildKit cgroup before build."""
+"""Verify the project-owned BuildKit service cgroup before building."""
 
 import json
 import subprocess

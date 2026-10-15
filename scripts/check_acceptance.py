@@ -17,35 +17,49 @@ JOBS = {
 
 
 def check(directory: Path, manifest: Path) -> None:
+    from agent_workbench.benchmark import validate_benchmark
+
     required = json.loads(manifest.read_text())
-    observed: set[str] = set()
-    seen_jobs: set[str] = set()
+    if required.get("schema_version") != 2 or set(required["jobs"]) != JOBS:
+        raise SystemExit("exact per-job mandatory inventory required")
+    expected = {job: set(ids) for job, ids in required["jobs"].items()}
+    for job, ids in expected.items():
+        if not ids or len(ids) != len(required["jobs"][job]):
+            raise SystemExit(f"empty/duplicate mandatory inventory: {job}")
+    paths = list(directory.rglob("*.xml"))
+    if len(paths) != len(JOBS) or {path.stem for path in paths} != JOBS:
+        raise SystemExit("exactly one report per mandatory job required")
     count = 0
-    for path in directory.rglob("*.xml"):
+    for path in paths:
         job = path.stem
-        seen_jobs.add(job)
-        root = ET.parse(path).getroot()
-        for case in root.iter("testcase"):
-            count += 1
-            name = case.attrib["name"]
-            observed.add(name.split("[")[0])
+        observed: set[str] = set()
+        for case in ET.parse(path).getroot().iter("testcase"):
+            # pytest's JUnit classname identifies its source module. Keep every parameter suffix.
+            node_id = case.attrib["classname"].replace(".", "/") + ".py::" + case.attrib["name"]
+            if node_id in observed:
+                raise SystemExit(f"duplicate executed case in {job}: {node_id}")
+            observed.add(node_id)
             if any(case.find(status) is not None for status in ("skipped", "failure", "error")):
-                raise SystemExit(f"mandatory case failed/skipped: {name}")
-    if not count or seen_jobs != JOBS:
-        raise SystemExit(f"missing/unexpected job test reports: {seen_jobs ^ JOBS}")
-    missing = set(required["required_test_ids"]) - observed
-    if missing:
-        raise SystemExit(f"mandatory test IDs never executed: {sorted(missing)}")
-    paths = list(directory.rglob("benchmark.json"))
-    if len(paths) != 1:
+                raise SystemExit(f"mandatory case failed/skipped: {node_id}")
+        if not observed or observed != expected[job]:
+            raise SystemExit(
+                f"{job}: missing={sorted(expected[job] - observed)}; "
+                f"unexpected={sorted(observed - expected[job])}"
+            )
+        count += len(observed)
+    benchmarks = list(directory.rglob("benchmark.json"))
+    if len(benchmarks) != 1:
         raise SystemExit("exactly one freshly executed benchmark artifact required")
-    benchmark = json.loads(paths[0].read_text())
-    case_ids = [case["scenario"] for case in benchmark["cases"]]
-    if len(case_ids) != 10 or set(case_ids) != set(required["golden_scenarios"]):
-        raise SystemExit("missing/duplicate/unknown mandatory golden cases")
-    if not benchmark["aggregate"]["passed"] or not all(c["passed"] for c in benchmark["cases"]):
-        raise SystemExit("golden gate failed")
-    print(f"Acceptance reports verified: {count} tests; 10/10 golden outcomes; no skips")
+    golden = json.loads((manifest.parent / "golden.json").read_text())
+    if set(required["golden_scenarios"]) != set(golden["cases"]):
+        raise SystemExit("mandatory scenario inventory differs from frozen golden specification")
+    try:
+        validate_benchmark(json.loads(benchmarks[0].read_text()), golden)
+    except (ValueError, TypeError, KeyError) as exc:
+        raise SystemExit(f"invalid executed benchmark: {exc}") from None
+    print(
+        f"Acceptance reports verified: {count} exact job/parameter cases; 10/10 outcomes; no skips"
+    )
 
 
 if __name__ == "__main__":

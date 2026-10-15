@@ -16,7 +16,7 @@ make demo
 # Open http://127.0.0.1:8765. Ctrl-C stops the server and its workers.
 ```
 
-The build script verifies a project-owned BuildKit service has at most two CPUs/four GiB before building the sandbox. Docker is required; there is no host execution fallback. On Studio, `make demo` uses the shared heavy-job queue once for each heavy operation. On another local host it runs directly. Initial image/dependency downloads require internet; offline runtime does not contact a model.
+The build script verifies a project-owned BuildKit service has at most two CPUs/four GiB before building the sandbox. Docker is required; there is no host execution fallback. Initial image/dependency downloads require internet; offline runtime does not contact a model.
 
 Try **Error repair + resume**: run the example, expand the deliberately failed analysis, then explicitly resume. The corrected call produces evidence; a child reviewer checks it; publication validates every number. Try **Revenue by region** for cited chart points, **Context compaction** for old-evidence retrieval, or **Reviewer rejection** for a failed publication with a retained timeline. Scripted scenario selection determines authored responses; a free-form question does not turn the default into a reasoning model.
 
@@ -53,7 +53,7 @@ uv run workbench replay RUN_ID       # read-only debugger JSON, never tool dispa
 uv run workbench judge RUN_ID        # authored offline rubric pipeline only
 ```
 
-On Studio, wrap heavy `make`/`uv` commands in `~/.local/bin/studio-heavy-run --` exactly once; do not wrap a command that already owns that queue. The demo script handles this automatically. The image can be built separately with `make sandbox` under that queue. Python package dependencies and official SDKs are pinned in `uv.lock`.
+The optional generic `JOB` Make variable accepts an external command prefix for your local scheduling policy. Use one prefix layer per command. Build the image separately with `make sandbox`. Python package dependencies and official SDKs are pinned in `uv.lock`.
 
 The frozen evaluation gate requires **10/10 scenario outcomes**, at most **24 aggregate parent/child execution steps**, **20,000 synthetic tokens** and **180 seconds** per case, with **$0 actual API spend**. These are acceptance requirements, not unmeasured performance claims. The runner writes measured per-case timings, hashes, observations and process-kill recovery evidence to `evals/benchmark.json`. Scenario pass count and published-report count are separate. Reproduce with `make eval`; [evaluation scope and negative controls](docs/evaluation.md).
 

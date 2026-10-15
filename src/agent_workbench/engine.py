@@ -24,11 +24,11 @@ from .models import (
     Verdict,
 )
 from .providers.base import Provider, TransientProviderError
-from .providers.schema import tools
+from .providers.schema import request_payload, tools
 from .providers.scripted import ScriptedProvider
 from .sandbox import DockerSandbox
 from .store import BoundaryError, Store
-from .telemetry import log_event, setup, trace_ids
+from .telemetry import log_event, safe_span, setup, trace_ids
 from .util import ROOT, file_hash, object_hash, source_fingerprint
 
 SCENARIOS = (
@@ -143,47 +143,78 @@ class Engine:
         # Root ownership precedes manifest inspection, cleanup and all dispatch.
         with self.store.ownership(run_id):
             self.store.checkpoint("root_owned", {"root_id": run_id})
-            config = RunConfig.model_validate(run["config"])
-            current = self.manifest(config)
-            if current != run["manifest"]:
-                changed = sorted(k for k in current if current[k] != run["manifest"].get(k))
-                raise IncompatibleResume(
-                    "incompatible immutable manifest: "
-                    + ", ".join(changed)
-                    + "; start a new run; no migration override"
-                )
-            self.sandbox.cleanup(run_id)
-            self.store.mark_ambiguous(run_id)
-            if self.store.report(run_id):
-                return self.snapshot(run_id)
-            provider = self.provider(config)
-            self.store.status(run_id, "running")
-            with self.tracer.start_as_current_span(
-                "run",
-                record_exception=False,
-                set_status_on_exception=False,
-                attributes={
-                    "run.id": run_id,
-                    "provider.mode": config.mode,
-                    "workflow.provenance": self.provenance(config),
-                },
-            ) as span:
-                self.store.event(run_id, "execution_started", trace_ids(span))
-                try:
-                    self._execute(run_id, config, provider, role="parent", pause_after=pause_after)
-                except Exception as exc:
-                    # Error details in private local journal; exported logs carry category only.
-                    category = type(exc).__name__
-                    public_error = str(exc)[:1000] if isinstance(exc, BoundaryError) else category
-                    self.store.status(run_id, "failed", public_error)
-                    self.store.event(
-                        run_id,
-                        "failed",
-                        {"category": category, "message": public_error, **trace_ids(span)},
+            failure_ids: dict[str, str] = {}
+            try:
+                config = RunConfig.model_validate(run["config"])
+                current = self.manifest(config)
+                if current != run["manifest"]:
+                    changed = sorted(k for k in current if current[k] != run["manifest"].get(k))
+                    raise IncompatibleResume(
+                        "incompatible immutable manifest: "
+                        + ", ".join(changed)
+                        + "; start a new run; no migration override"
                     )
-                    log_event("failed", run_id=run_id, category=category, **trace_ids(span))
-                    raise
+                self.sandbox.cleanup(run_id)
+                self.store.mark_ambiguous(run_id)
+                if self.store.report(run_id):
+                    return self.snapshot(run_id)
+                provider = self.provider(config)
+                self.store.status(run_id, "running")
+                with safe_span(
+                    self.tracer,
+                    "run",
+                    attributes={
+                        "run.id": run_id,
+                        "provider.mode": config.mode,
+                        "workflow.provenance": self.provenance(config),
+                    },
+                ) as span:
+                    failure_ids = trace_ids(span)
+                    self.store.event(run_id, "execution_started", failure_ids)
+                    self._execute(run_id, config, provider, role="parent", pause_after=pause_after)
+            except Exception as exc:
+                self._persist_failure(run_id, exc, failure_ids)
+                raise
         return self.snapshot(run_id)
+
+    def _persist_failure(self, run_id: str, exc: Exception, ids: dict[str, str]) -> None:
+        category = type(exc).__name__
+        message = str(exc)[:1000] if isinstance(exc, BoundaryError) else category
+        self.store.status(run_id, "failed", message)
+        self.store.event(
+            run_id,
+            "failed",
+            {
+                "category": category,
+                "message": message,
+                **ids,
+                "action": "start a new run"
+                if isinstance(exc, IncompatibleResume)
+                else "inspect timeline",
+            },
+        )
+        log_event("failed", run_id=run_id, category=category, **ids)
+
+    @staticmethod
+    def provider_input_estimate(
+        config: RunConfig, system: str, messages: list[dict[str, Any]], role: str
+    ) -> int:
+        return estimate_tokens(
+            request_payload(
+                config.mode, config.model, system, messages, role, config.limits.output_token_cap
+            )
+        )
+
+    @classmethod
+    def admit_provider(
+        cls, config: RunConfig, system: str, messages: list[dict[str, Any]], role: str
+    ) -> int:
+        estimate = cls.provider_input_estimate(config, system, messages, role)
+        if estimate > config.limits.input_token_cap:
+            raise BoundaryError("conservative input estimate exceeds configured input cap")
+        if estimate + config.limits.output_token_cap > config.limits.context_tokens:
+            raise BoundaryError("input estimate plus output allowance exceeds context_tokens")
+        return estimate
 
     def _execute(
         self,
@@ -238,32 +269,7 @@ class Engine:
                             "context": messages,
                         },
                     )
-                input_estimate = estimate_tokens(
-                    {"system": system, "messages": messages, "tools": tools(role)}
-                )
-                if input_estimate > config.limits.input_token_cap:
-                    # One further reference-only compaction before refusing dispatch.
-                    messages, _ = compact(
-                        run["question"],
-                        messages,
-                        ids,
-                        force=True,
-                        threshold=max(
-                            100,
-                            min(
-                                config.limits.input_token_cap,
-                                config.limits.context_tokens - config.limits.output_token_cap,
-                            )
-                            - estimate_tokens({"system": system, "tools": tools(role)}),
-                        ),
-                        root_id=root_id,
-                        dataset_hash=run["manifest"]["dataset_hash"],
-                    )
-                    input_estimate = estimate_tokens(
-                        {"system": system, "messages": messages, "tools": tools(role)}
-                    )
-                if input_estimate > config.limits.input_token_cap:
-                    raise BoundaryError("conservative input estimate exceeds configured input cap")
+                self.admit_provider(config, system, messages, role)
                 turn = self._provider_turn(
                     run_id, root_id, config, provider, system, messages, role, turn_index
                 )
@@ -298,10 +304,9 @@ class Engine:
                 self.store.event(
                     run_id, "tool_dispatched", {"call_id": decision.id, "attempt": attempt}
                 )
-                with self.tracer.start_as_current_span(
+                with safe_span(
+                    self.tracer,
                     "tool",
-                    record_exception=False,
-                    set_status_on_exception=False,
                     attributes={"run.id": run_id, "tool.name": decision.name, "step": turn_index},
                 ) as span:
                     start = time.monotonic()
@@ -358,14 +363,14 @@ class Engine:
     ) -> Turn:
         limits = config.limits
         for attempt in range(limits.provider_attempts):
+            self.admit_provider(config, system, messages, role)
             reservation = self.store.reserve(root_id, run_id, limits, config.mode != "scripted")
             self.store.checkpoint(
                 "provider_reserved", {"run_id": run_id, "reservation": reservation}
             )
-            with self.tracer.start_as_current_span(
+            with safe_span(
+                self.tracer,
                 "provider",
-                record_exception=False,
-                set_status_on_exception=False,
                 attributes={
                     "run.id": run_id,
                     "step": index,
@@ -504,8 +509,10 @@ class Engine:
                         },
                     )
                 if self.store.verdict(root_id) is None:
-                    with self.tracer.start_as_current_span(
-                        "reviewer_child", attributes={"run.id": child_id, "parent.id": root_id}
+                    with safe_span(
+                        self.tracer,
+                        "reviewer_child",
+                        attributes={"run.id": child_id, "parent.id": root_id},
                     ):
                         # Child context is bounded separately; all reservations share root budget.
                         self._execute(
@@ -517,7 +524,12 @@ class Engine:
                         )
                 return {"child_id": child_id, "verdict": self.store.verdict(root_id)}
             if call.name == "publish":
-                return self.store.publish(root_id, call.id, Report.model_validate(call.arguments))
+                return self.store.publish(
+                    root_id,
+                    call.id,
+                    Report.model_validate(call.arguments),
+                    original_arguments=call.arguments,
+                )
         except ValidationError as exc:
             raise BoundaryError("tool argument schema validation failed") from exc
         raise BoundaryError("unknown tool capability")

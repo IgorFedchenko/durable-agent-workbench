@@ -7,7 +7,6 @@ import os
 import selectors
 import shutil
 import subprocess
-import tempfile
 import time
 import uuid
 from pathlib import Path
@@ -70,13 +69,25 @@ class DockerSandbox:
                     raise SandboxError("failed removing owned container")
             elif "No such" not in result.stderr:
                 raise SandboxError("cannot inspect prior owned container")
-            staging = self.store.staging(name)
-            if (
-                staging.name.startswith("daw-input-")
-                and staging.parent == Path(tempfile.gettempdir()).resolve()
-            ):
-                shutil.rmtree(staging, ignore_errors=True)
             self.store.container_removed(name)
+        # Root-owned namespace also covers crashes before a container intent exists.
+        namespace = self.staging_namespace(root_id)
+        if namespace.is_symlink():
+            raise SandboxError("staging namespace must not be a symlink")
+        if namespace.exists():
+            for attempt in namespace.iterdir():
+                if attempt.name.startswith("attempt-") and not attempt.is_symlink():
+                    shutil.rmtree(attempt)
+                else:
+                    raise SandboxError("unexpected entry in root staging namespace")
+            namespace.rmdir()
+
+    def staging_namespace(self, root_id: str) -> Path:
+        uuid.UUID(root_id)
+        parent = self.store.directory / "staging"
+        if parent.is_symlink():
+            raise SandboxError("staging parent must not be a symlink")
+        return parent / root_id
 
     def command(self, name: str, root_id: str, call_id: str, staging: Path) -> list[str]:
         return [
@@ -117,7 +128,7 @@ class DockerSandbox:
             "/tmp:rw,noexec,nosuid,nodev,size=1048576,mode=1777",
             "--mount",
             f"type=bind,src={staging},dst=/input,readonly",
-            self.image,
+            self.store.run(root_id)["manifest"]["sandbox_image_id"],
         ]
 
     def execute(
@@ -133,13 +144,22 @@ class DockerSandbox:
         if len(code.encode()) > 12000:
             raise SandboxError("source exceeds size bound")
         name = f"daw-{root_id}-{uuid.uuid4().hex[:12]}"
-        staging = Path(tempfile.mkdtemp(prefix="daw-input-")).resolve()
+        namespace = self.staging_namespace(root_id)
+        if namespace.is_symlink():
+            raise SandboxError("staging namespace must not be a symlink")
+        namespace.mkdir(parents=True, exist_ok=True, mode=0o700)
+        staging = namespace / f"attempt-{uuid.uuid4().hex}"
+        staging.mkdir(mode=0o755)
+        self.store.checkpoint("staging_allocated", {"root_id": root_id, "staging": str(staging)})
         os.chmod(staging, 0o755)
         try:
             (staging / "code.py").write_text(code)
             shutil.copyfile(dataset, staging / "data.csv", follow_symlinks=False)
             for path in staging.iterdir():
                 os.chmod(path, 0o444)
+            self.store.checkpoint(
+                "staging_prepared_before_intent", {"root_id": root_id, "staging": str(staging)}
+            )
             # Persist launch intent before any Docker create; crashes leave a cleanup target.
             self.store.container_intent(root_id, run_id, call_id, name, str(staging))
             self.store.checkpoint("container_intent_committed", {"name": name, "root_id": root_id})
@@ -155,11 +175,15 @@ class DockerSandbox:
                 ["docker", "inspect", name], capture_output=True, timeout=15, check=True
             )
             inspection = json.loads(inspected.stdout)[0]
+            frozen_image = self.store.run(root_id)["manifest"]["sandbox_image_id"]
+            if inspection["Image"] != frozen_image:
+                raise SandboxError("created container differs from frozen image identity")
             self.store.event(
                 run_id,
                 "sandbox_created",
                 {
                     "container": name,
+                    "image_id": inspection["Image"],
                     "host_config": inspection["HostConfig"],
                     "user": inspection["Config"]["User"],
                 },

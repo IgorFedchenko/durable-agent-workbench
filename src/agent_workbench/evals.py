@@ -11,10 +11,12 @@ import time
 from pathlib import Path
 from typing import Any
 
+from . import __version__
+from .benchmark import git_revision
 from .engine import SCENARIOS, Engine
 from .models import RunConfig
 from .store import BoundaryError, Store
-from .util import ROOT, object_hash
+from .util import ROOT, object_hash, source_fingerprint
 
 
 def evaluate_case(
@@ -163,6 +165,8 @@ def run_benchmark(directory: Path, output: Path) -> dict[str, Any]:
                 "run_id": run_id,
                 "expected": json.loads((ROOT / "evals/golden.json").read_text())["cases"][scenario],
                 "observed_report": snapshot["report"],
+                "verdict": snapshot["verdict"],
+                "status": snapshot["run"]["status"],
                 "metrics": snapshot["metrics"],
                 "wall_seconds": elapsed,
                 "manifest": manifest,
@@ -173,6 +177,11 @@ def run_benchmark(directory: Path, output: Path) -> dict[str, Any]:
         )
     result = {
         "schema_version": 1,
+        "code": {
+            "git_sha": git_revision(ROOT),
+            "package_version": __version__,
+            "source_fingerprint": source_fingerprint(),
+        },
         "evaluation": "deterministic systems outcomes; not model accuracy",
         "usage": "labeled synthetic tokens; author-written scripted recordings",
         "cases": cases,

@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class StrictModel(BaseModel):
@@ -103,6 +103,12 @@ class Limits(StrictModel):
         if value is not None and not math.isfinite(value):
             raise ValueError("prices and budget must be finite")
         return value
+
+    @model_validator(mode="after")
+    def possible_context(self) -> Limits:
+        if self.output_token_cap >= self.context_tokens:
+            raise ValueError("output allowance must leave room for input within context_tokens")
+        return self
 
 
 class RunConfig(StrictModel):

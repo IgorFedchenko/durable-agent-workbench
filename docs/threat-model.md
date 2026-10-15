@@ -8,7 +8,7 @@ The host supervises pipes with a byte limit and kills/removes the container on t
 
 Acceptance probes must inspect actual Docker HostConfig and execute real IP/DNS, known-existing host/sibling sentinel, UID/capability/rootfs, memory/CPU/PID/tmpfs/output/wall and cleanup tests with positive controls. Merely showing flags or attempting to read an invented nonexistent file is insufficient. These checks demonstrate specific configured controls; they do not prove absence of all kernel/container escapes. Docker shares a kernel. Never use privileged/unconfined runtime containers for this workbench.
 
-BuildKit is a separate trusted build service, not an untrusted runtime. `scripts/build_sandbox.py` creates a project-specific builder and verifies its effective cgroup limit is at most two CPUs/four GiB before building. It refuses missing/excessive limits. On Studio the whole build remains inside the shared heavy-job queue. It never modifies another project's builder.
+BuildKit is a separate trusted build service, not an untrusted runtime. `scripts/build_sandbox.py` creates a project-specific builder and verifies its effective cgroup limit is at most two CPUs/four GiB before building. It refuses missing/excessive limits. It never modifies another project's builder.
 
 Local web protections reduce drive-by localhost requests: exact loopback Host, exact same-origin Origin, CSRF, CSP, escaped output, no arbitrary paths/uploads/shell or live-provider selection. This is not an authenticated remote service. Do not bind it publicly or put real credentials/data into questions.
 

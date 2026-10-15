@@ -623,7 +623,13 @@ def test_completed_call_reused_after_restart(store):
 
 
 def test_kill_before_dispatch(store):
-    engine, root = _real(store)
+    engine = Engine(store)
+    # This recovery fixture permits the retained ambiguous reservation plus a fresh one.
+    # Dedicated paid-ledger crash fixtures separately require refusal at a tight ceiling.
+    root = engine.create(
+        "Recovery before transport dispatch",
+        RunConfig(scenario="total", limits=Limits(max_tokens=40000)),
+    )
     worker = Worker(store.directory, root, "provider_reserved")
     try:
         worker.reached()

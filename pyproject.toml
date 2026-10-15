@@ -16,7 +16,7 @@ workbench = "agent_workbench.cli:main"
 workbench_policy = "agent_workbench.pytest_policy"
 
 [dependency-groups]
-dev = ["pytest>=8.3,<10", "pytest-timeout>=2.3,<3", "httpx>=0.28,<1", "playwright>=1.50,<2", "ruff>=0.11,<1", "mypy>=1.15,<2", "pillow>=11,<13", "bandit>=1.8,<2"]
+dev = ["pytest>=8.3,<10", "pytest-timeout>=2.3,<3", "httpx>=0.28,<1", "playwright>=1.50,<2", "ruff>=0.11,<1", "mypy>=1.15,<3", "pillow>=11,<13", "bandit>=1.8,<2"]
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

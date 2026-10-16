@@ -1,3 +1,4 @@
+# Inactive example. Activate only after general review and an explicit public-repository decision.
 version: 2
 updates:
   - package-ecosystem: uv

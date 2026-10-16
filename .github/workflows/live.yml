@@ -22,7 +22,7 @@ permissions:
   contents: read
 jobs:
   smoke:
-    if: inputs.allow_paid_call
+    if: github.event.repository.private == false && inputs.allow_paid_call
     runs-on: ubuntu-latest
     environment: manual-live-provider
     steps:

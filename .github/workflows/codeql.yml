@@ -11,7 +11,7 @@ permissions:
   contents: read
 jobs:
   analyze:
-    if: inputs.enabled
+    if: github.event.repository.private == false && inputs.enabled
     runs-on: ubuntu-latest
     permissions:
       security-events: write

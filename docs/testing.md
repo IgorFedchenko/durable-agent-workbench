@@ -32,7 +32,7 @@ make eval
 
 `make eval` writes measured per-case evidence to `evals/benchmark.json`. The frozen gate requires ten scenario outcomes, at most 24 execution steps, 20,000 synthetic tokens and 180 seconds per case, with zero actual API spend. These limits are acceptance requirements, not benchmark results. Scenario success and published-report count are separate. See [evaluation scope](evaluation.md).
 
-The retained hosted workflow recipe shows the five-suite report layout and `scripts/check_acceptance.py` verifies exact job/parameter identities plus a fresh benchmark. A single full-suite JUnit file is useful local evidence but is not that five-report input layout. GitHub Actions is disabled while this repository is private, and every recipe job has a public-repository guard. No hosted CI execution or green badge is claimed.
+The retained hosted workflow recipe shows the five-suite report layout and `scripts/check_acceptance.py` verifies exact job/parameter identities plus a fresh benchmark. A single full-suite JUnit file is useful local evidence but is not that five-report input layout. GitHub Actions is disabled while this repository is private, and every recipe job has a public-repository guard. No hosted CI execution or green badge is claimed. Optional CodeQL and live-smoke recipes also require a public repository and explicit manual opt-in; no live credentials are connected. Dependency-update automation is retained as an [inactive Dependabot template](examples/dependabot.yml), outside GitHub’s active configuration path. Activate it only after general review and an explicit public-repository decision. Existing dependency PRs and branches are preserved.
 
 ## Visual evidence and limits
 

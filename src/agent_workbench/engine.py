@@ -154,9 +154,10 @@ class Engine:
                         + ", ".join(changed)
                         + "; start a new run; no migration override"
                     )
-                self.sandbox.cleanup(run_id)
+                self.sandbox.cleanup(run_id, remove_namespace=False)
                 self.store.mark_ambiguous(run_id)
                 if self.store.report(run_id):
+                    self.sandbox.cleanup(run_id)
                     return self.snapshot(run_id)
                 provider = self.provider(config)
                 self.store.status(run_id, "running")
@@ -172,6 +173,8 @@ class Engine:
                     failure_ids = trace_ids(span)
                     self.store.event(run_id, "execution_started", failure_ids)
                     self._execute(run_id, config, provider, role="parent", pause_after=pause_after)
+                if self.store.run(run_id)["status"] == "completed":
+                    self.sandbox.cleanup(run_id)
             except Exception as exc:
                 self._persist_failure(run_id, exc, failure_ids)
                 raise

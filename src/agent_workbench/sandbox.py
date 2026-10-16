@@ -7,6 +7,7 @@ import os
 import selectors
 import shutil
 import subprocess
+import sys
 import time
 import uuid
 from pathlib import Path
@@ -44,7 +45,7 @@ class DockerSandbox:
             )
         return result.stdout.strip()
 
-    def cleanup(self, root_id: str) -> None:
+    def cleanup(self, root_id: str, *, remove_namespace: bool = True) -> None:
         for name in self.store.containers(root_id):
             result = subprocess.run(
                 [
@@ -67,7 +68,11 @@ class DockerSandbox:
                 )
                 if removed.returncode:
                     raise SandboxError("failed removing owned container")
-            elif "No such" not in result.stderr:
+            elif not any(
+                line.strip().casefold().endswith(f"no such {kind}: {name}".casefold())
+                for line in result.stderr.splitlines()
+                for kind in ("object", "container")
+            ):
                 raise SandboxError("cannot inspect prior owned container")
             self.store.container_removed(name)
         # Root-owned namespace also covers crashes before a container intent exists.
@@ -80,7 +85,8 @@ class DockerSandbox:
                     shutil.rmtree(attempt)
                 else:
                     raise SandboxError("unexpected entry in root staging namespace")
-            namespace.rmdir()
+            if remove_namespace:
+                namespace.rmdir()
 
     def staging_namespace(self, root_id: str) -> Path:
         uuid.UUID(root_id)
@@ -216,14 +222,30 @@ class DockerSandbox:
                 proc.wait(timeout=2)
             finally:
                 selector.close()
-                if proc.poll() is None:
-                    subprocess.run(
-                        ["docker", "kill", name], capture_output=True, timeout=15, check=False
+                primary_failure = sys.exception()
+                attached = proc.poll() is None
+                try:
+                    # Stop the local attach client before asking the daemon to kill
+                    # a producer whose output pipes are no longer being drained.
+                    try:
+                        if attached:
+                            proc.kill()
+                        proc.wait(timeout=5)
+                    finally:
+                        proc.stdout.close()
+                        proc.stderr.close()
+                    if attached:
+                        killed = subprocess.run(
+                            ["docker", "kill", name], capture_output=True, timeout=15, check=False
+                        )
+                        if killed.returncode:
+                            raise SandboxError("failed stopping owned sandbox container")
+                except Exception as stop_failure:
+                    if primary_failure is None:
+                        raise
+                    primary_failure.add_note(
+                        f"sandbox stop also failed: {type(stop_failure).__name__}: {stop_failure}"
                     )
-                    proc.kill()
-                proc.wait(timeout=5)
-                proc.stdout.close()
-                proc.stderr.close()
             state = json.loads(
                 subprocess.run(
                     ["docker", "inspect", name], capture_output=True, timeout=15, check=True
@@ -251,7 +273,19 @@ class DockerSandbox:
             return {"ok": True, "data": body, "duration_seconds": elapsed}
         finally:
             # If killed with SIGKILL, recovery removes persisted container under root flock.
+            primary_failure = sys.exception()
             try:
-                self.cleanup(root_id)
-            finally:
+                # Keep this ancestor stable for subsequent tools and recovery.
+                # Docker Desktop observes binds daemon-side, not host-side.
+                self.cleanup(root_id, remove_namespace=False)
+            except Exception as cleanup_failure:
+                # Keep the original execution failure visible and leave the
+                # recorded container/staging available for explicit recovery.
+                if primary_failure is None:
+                    raise
+                primary_failure.add_note(
+                    f"sandbox cleanup also failed: {type(cleanup_failure).__name__}: "
+                    f"{cleanup_failure}"
+                )
+            else:
                 shutil.rmtree(staging, ignore_errors=True)

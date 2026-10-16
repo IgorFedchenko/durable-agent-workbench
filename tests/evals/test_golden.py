@@ -67,6 +67,12 @@ def test_golden_outcome(store, scenario):
     elapsed = time.monotonic() - started
     snap = engine.snapshot(root)
     assert_oracle(scenario, snap)
+    namespace = engine.sandbox.staging_namespace(root)
+    if snap["run"]["status"] == "completed":
+        assert not namespace.exists(), "completed roots must remove staging metadata"
+    elif namespace.exists():
+        assert not namespace.is_symlink() and namespace.is_dir()
+        assert not list(namespace.iterdir()) and namespace.stat().st_mode & 0o777 == 0o700
     assert (
         snap["metrics"]["steps"] <= 24
         and snap["metrics"]["charged_tokens"] <= 20000

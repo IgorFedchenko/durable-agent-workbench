@@ -32,8 +32,12 @@ def runtime(store):
     engine = Engine(store, sandbox=sandbox)
     root = engine.create("Boundary probe", RunConfig(scenario="total"))
     yield sandbox, root
-    sandbox.cleanup(root)
-    engine.tracer_provider.shutdown()
+    try:
+        sandbox.cleanup(root)
+        assert not sandbox.staging_namespace(root).exists()
+        assert not store.containers(root)
+    finally:
+        engine.tracer_provider.shutdown()
 
 
 def execute(runtime, source):
@@ -51,9 +55,20 @@ def inspection(runtime):
 
 
 def assert_removed(runtime):
+    """No call resources remain; an active root may retain only stable empty metadata."""
     sandbox, root = runtime
     assert not sandbox.store.containers(root)
-    assert not sandbox.staging_namespace(root).exists()
+    namespace = sandbox.staging_namespace(root)
+    if namespace.exists():
+        assert not namespace.is_symlink() and namespace.is_dir()
+        assert not list(namespace.iterdir()), "call inputs/attempts must not survive cleanup"
+        metadata = namespace.stat()
+        assert metadata.st_mode & 0o777 == 0o700
+        assert sandbox.store.run(root)["id"] == root
+        previous = getattr(sandbox, "_observed_namespace_inode", None)
+        if previous is not None:
+            assert metadata.st_ino == previous, "same-root bind ancestor identity changed"
+        sandbox._observed_namespace_inode = metadata.st_ino
     assert docker("ps", "-aq", "--filter", f"label=workbench.root={root}").stdout.strip() == ""
 
 

@@ -1,6 +1,5 @@
 # Durable Agent Workbench
 
-[![CI](https://github.com/IgorFedchenko/durable-agent-workbench/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorFedchenko/durable-agent-workbench/actions/workflows/ci.yml)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-356b81)](pyproject.toml)
 [![MIT](https://img.shields.io/badge/license-MIT-39755c)](LICENSE)
 
@@ -45,6 +44,8 @@ Publication requires a persisted accepting reviewer and root/dataset-owned evide
 The sandbox runs non-root with network disabled, a read-only root/input, dropped capabilities, no-new-privileges, default seccomp and CPU/memory/PID/tmpfs/wall/output bounds. No secrets/home/database/sibling/Docker socket are mounted. These are specific controls to verify with real probes, not proof against every kernel escape or a multi-tenant cloud security claim. [Threat model](docs/threat-model.md).
 
 ```sh
+uv sync --frozen --group dev
+uv run playwright install chromium
 make quality
 make secrets                         # requires local gitleaks
 make test                            # mandatory Docker/browser prerequisites; no skip fallback
@@ -57,10 +58,10 @@ The optional generic `JOB` Make variable accepts an external command prefix for 
 
 The frozen evaluation gate requires **10/10 scenario outcomes**, at most **24 aggregate parent/child execution steps**, **20,000 synthetic tokens** and **180 seconds** per case, with **$0 actual API spend**. These are acceptance requirements, not unmeasured performance claims. The runner writes measured per-case timings, hashes, observations and process-kill recovery evidence to `evals/benchmark.json`. Scenario pass count and published-report count are separate. Reproduce with `make eval`; [evaluation scope and negative controls](docs/evaluation.md).
 
-OpenAI and Anthropic adapters use official SDKs, exactly one call per model turn, preserved call/result IDs and disabled SDK retries. They and the live judge are **contract-tested / live-unverified** until an authorized live run produces evidence. Live use requires explicit CLI opt-in, environment-only key, exact model, configured prices and output/spend bounds. Unknown usage retains a full durable reservation. [Provider commands and cost limits](docs/providers.md).
+OpenAI and Anthropic adapters use official SDKs, exactly one call per model turn, preserved call/result IDs and disabled SDK retries. Their local transport-contract tests and the live judge are described in [testing](docs/testing.md); live integrations remain **live-unverified**. Live use requires explicit CLI opt-in, environment-only key, exact model, configured prices and output/spend bounds. Unknown usage retains a full durable reservation. [Provider commands and cost limits](docs/providers.md).
 
 Structured metadata logs and real local OpenTelemetry spans expose run/step/attempt/trace IDs, usage and measured latency. Raw prompts/data are excluded from exported telemetry. SQLite remains the primary debugger. Optional local Phoenix/OTLP is described in [observability](docs/observability.md); no tracing service or cloud telemetry is enabled by default.
 
-CI names quality, unit-contracts, durability-integration, sandbox-boundaries, browser-e2e, offline-golden, secret-scan and acceptance-gate. Mandatory infrastructure checks fail when prerequisites are missing; no fabricated coverage percentage is shown. Gitleaks scans history/files independently of account security features. CodeQL and native push protection depend on private-repository licensing and are not enabled through a paid plan.
+**Validation is local.** GitHub Actions is disabled for this private repository; no hosted CI run is claimed. The retained workflow recipe also gates every job to public repositories and requires a separate decision before use. Local checks cover quality, provider contracts, durability, sandbox boundaries, browser behavior, offline goldens and secret scanning. Missing mandatory prerequisites fail clearly. See [testing and reproduction](docs/testing.md) for commands, result artifacts and verification limits. Gitleaks scans local history/files without an account security subscription.
 
-See [design decisions](docs/adr/001-explicit-state-machine.md), [Docker boundary](docs/adr/002-docker-boundary.md), [evaluation validity](docs/adr/003-scripted-evaluation.md), [changelog](CHANGELOG.md) and [MIT license](LICENSE).
+See [decision index](docs/decisions.md), [design decisions](docs/adr/001-explicit-state-machine.md), [Docker boundary](docs/adr/002-docker-boundary.md), [evaluation validity](docs/adr/003-scripted-evaluation.md), [changelog](CHANGELOG.md) and [MIT license](LICENSE).

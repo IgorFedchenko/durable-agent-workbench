@@ -2,7 +2,7 @@
 
 The normalized provider protocol permits exactly one tool call or one strict structured final answer per turn. Parallel/multiple calls reject explicitly. Tool call IDs survive the next request as OpenAI `tool_call_id` or Anthropic `tool_use_id`. Unknown tools/arguments, invalid numeric fields, refusal and truncation fail clearly. There is no silent truncation or unbounded schema repair.
 
-The adapters use the official OpenAI Chat Completions and Anthropic Messages SDKs, pinned exactly by `uv.lock`. SDK retries are zero; engine retries each need a new durable reservation. Local provider-shaped transport fixtures validate request/response contracts. **Both adapters and the live judge are contract-tested / live-unverified until an authorized live run produces evidence.** No live quality or billing benchmark is claimed.
+The adapters use the official OpenAI Chat Completions and Anthropic Messages SDKs, pinned exactly by `uv.lock`. SDK retries are zero; engine retries each need a new durable reservation. Local provider-shaped transport fixtures are provided to check request/response contracts; executing them is part of [local verification](testing.md). **Both adapters and the live judge remain live-unverified until an authorized live run produces evidence.** No live quality or billing benchmark is claimed.
 
 The default demo/CLI/UI/eval use no paid transport. Keys come only from environment and never appear in UI or config files. Web requests cannot enable live mode. A manual smoke requires all of the following, using your chosen provider's actual exact model and your configured worst-case price assumptions:
 

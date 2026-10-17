@@ -113,7 +113,13 @@ def main() -> None:
                     expect(page.locator("#run-status")).to_have_text("INTERRUPTED", timeout=60000)
                     failed_attempt = page.locator("#timeline details.failure").first
                     failed_attempt.locator("summary").click()
-                    failed_attempt.scroll_into_view_if_needed()
+                    expect(failed_attempt).to_have_attribute("open", "")
+                    # Timeline polling replaces detail nodes. Resolve the current
+                    # locator and scroll synchronously, without an element-handle
+                    # stability wait that can outlive the rendered node.
+                    failed_attempt.evaluate(
+                        "node => node.scrollIntoView({block: 'center', behavior: 'instant'})"
+                    )
                     capture()
                     page.locator("#resume").click()
                     expect(page.locator("#run-status")).to_have_text("COMPLETED", timeout=60000)
@@ -123,7 +129,10 @@ def main() -> None:
                         .first
                     )
                     reviewer.locator("summary").click()
-                    reviewer.scroll_into_view_if_needed()
+                    expect(reviewer).to_have_attribute("open", "")
+                    reviewer.evaluate(
+                        "node => node.scrollIntoView({block: 'center', behavior: 'instant'})"
+                    )
                     capture()
                     page.locator("#workspace").scroll_into_view_if_needed()
                     capture()

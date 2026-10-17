@@ -18,6 +18,8 @@ make eval
 
 `make demo` is the one-command local launch, including dependency synchronization and sandbox build. Open `http://127.0.0.1:8765`; Ctrl-C stops its server/workers. `make test` is the one-command full test check after prerequisites. Missing Docker/browser infrastructure fails rather than silently skipping mandatory checks. If your host requires job scheduling, use its command prefix through `make JOB="your-local-job-runner --" test`, with one scheduling layer per command. The application does not depend on a particular scheduler.
 
+Docker must be able to bind-mount the checkout. `make test` uses a unique temporary directory under the ignored `.workbench/` directory so fixtures share the checkout's mount visibility. This also avoids macOS private temporary paths that a Linux VM may not share. For a focused direct pytest invocation, pass `--basetemp` pointing to a fresh directory on a filesystem shared with the Docker daemon.
+
 Optional contributor hooks use an isolated launcher; pre-commit is not a project dev dependency:
 
 ```sh

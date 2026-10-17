@@ -16,7 +16,8 @@ secrets:
 	gitleaks git --redact --no-banner
 	gitleaks dir --redact --no-banner .
 test:
-	$(JOB) $(UV) run pytest -p workbench_policy --junitxml=.workbench/test-results/all.xml
+	mkdir -p -m 700 .workbench
+	$(JOB) $(UV) run pytest -p workbench_policy --basetemp="$(CURDIR)/.workbench/pytest-$$$$" --junitxml=.workbench/test-results/all.xml
 eval:
 	$(JOB) $(UV) run workbench eval --output evals/benchmark.json
 capture:

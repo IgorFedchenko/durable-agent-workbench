@@ -11,6 +11,8 @@ A local agent workflow that turns a synthetic retail question into isolated Pyth
 
 Actual browser capture of the offline workflow: repair and resume, reviewer linkage, then a regional report with cited chart values. [View the full cover screenshot](docs/portfolio-cover.png). Captured at source `e5a004f`; the runtime source fingerprint matches the tested `4b126a3` source.
 
+## Run locally
+
 ```sh
 # Prerequisites: Docker Engine/Desktop with buildx, uv, Python 3.12+, local Linux/macOS filesystem.
 git clone https://github.com/IgorFedchenko/durable-agent-workbench.git
@@ -49,6 +51,8 @@ Publication requires a persisted accepting reviewer and root/dataset-owned evide
 
 The sandbox runs non-root with network disabled, a read-only root/input, dropped capabilities, no-new-privileges, default seccomp and CPU/memory/PID/tmpfs/wall/output bounds. No secrets/home/database/sibling/Docker socket are mounted. These are specific controls to verify with real probes, not proof against every kernel escape or a multi-tenant cloud security claim. [Threat model](docs/threat-model.md).
 
+## Verification
+
 ```sh
 uv sync --frozen --group dev
 uv run playwright install chromium
@@ -80,5 +84,9 @@ Structured metadata logs and real local OpenTelemetry spans expose run/step/atte
 The full local suite passed **105/105 cases in 137.63 s** at source `4b126a3`, with zero failures, errors or skips. It exercised unit contracts, process durability, real Docker boundaries, a real browser and offline goldens. The benchmark above ran separately at `f075ab8` with the same runtime source fingerprint.
 
 **Validation is local.** GitHub Actions remains disabled after publication; no hosted CI run is claimed. The retained workflow recipe also gates every job to public repositories and requires a separate decision before use. Local checks cover quality, provider contracts, durability, sandbox boundaries, browser behavior, offline goldens and secret scanning. Missing mandatory prerequisites fail clearly. See [testing and reproduction](docs/testing.md) for commands, result artifacts and verification limits. Gitleaks scans local history/files without an account security subscription.
+
+## Limitations
+
+This is a single-host synthetic reference. Scripted results do not establish live model reasoning or multi-tenant cloud security. No hosted deployment is supplied. Recovery requires a local filesystem, root ownership and compatible inputs.
 
 See [decision index](docs/decisions.md), [design decisions](docs/adr/001-explicit-state-machine.md), [Docker boundary](docs/adr/002-docker-boundary.md), [evaluation validity](docs/adr/003-scripted-evaluation.md), [changelog](CHANGELOG.md) and [MIT license](LICENSE).

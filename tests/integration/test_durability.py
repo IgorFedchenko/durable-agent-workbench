@@ -526,7 +526,134 @@ def test_kill_after_reservation_retains_charge(store):
     _ledger_kill_test(store, False)
 
 
+def _blocking_transport_worker(directory, root, connection):
+    store = Store(Path(directory))
+    engine = Engine(store)
+    config = RunConfig.model_validate(store.run(root)["config"])
+
+    class FakePaid:
+        def turn(self, *args, **kwargs):
+            receipt = {
+                "pid": os.getpid(),
+                "root_id": root,
+                "role": kwargs["role"],
+                "ledger_at_transport_entry": store.ledger(root),
+                "simulated_billed_cost_usd": "0.030",
+            }
+            with (store.directory / "blocking-transport-receipts.jsonl").open("a") as stream:
+                stream.write(json.dumps(receipt) + "\n")
+                stream.flush()
+                os.fsync(stream.fileno())
+            connection.send(receipt)
+            # The parent kills this actual process before any response exists.
+            connection.recv()
+            raise AssertionError("blocking transport unexpectedly released")
+
+    try:
+        with store.ownership(root):
+            engine._provider_turn(
+                root,
+                root,
+                config,
+                FakePaid(),
+                "policy",
+                [{"role": "user", "content": "q"}],
+                "parent",
+                0,
+            )
+    finally:
+        engine.tracer_provider.shutdown()
+        connection.close()
+
+
+def _assert_blocking_transport_crash_retry(store):
+    limits = Limits(
+        input_token_cap=10000,
+        output_token_cap=10,
+        input_price_per_million=1.0,
+        output_price_per_million=2000.0,
+        max_cost_usd=0.05,
+        max_tokens=100000,
+        max_steps=24,
+        provider_attempts=1,
+    )
+    assert (Decimal(10000) * 1 + Decimal(10) * 2000) / 1000000 == Decimal("0.030")
+    root = raw_run(store, live=True, limits=limits)
+    receipt_path = store.directory / "blocking-transport-receipts.jsonl"
+    proc, pipe = _spawn(_blocking_transport_worker, str(store.directory), root)
+    try:
+        assert pipe.poll(15), "worker never entered FakePaid transport"
+        receipt = pipe.recv()
+        assert receipt["pid"] == proc.pid
+        dispatched = receipt["ledger_at_transport_entry"]
+        assert len(dispatched) == 1 and dispatched[0]["state"] == "dispatched"
+        with pytest.raises(BusyRun):
+            with store.ownership(root):
+                pytest.fail("transport worker did not hold root ownership")
+        _kill(proc)
+        replacement = Store(store.directory)
+        engine = Engine(replacement)
+        config = RunConfig.model_validate(replacement.run(root)["config"])
+
+        class RetryPaid:
+            def turn(self, *args, **kwargs):
+                # Record accidental retry before failing: sends are independent
+                # of ledger rows and remain visible under budget regressions.
+                with receipt_path.open("a") as stream:
+                    stream.write(json.dumps({"unexpected_retry_pid": os.getpid()}) + "\n")
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                raise AssertionError("second FakePaid transport invocation")
+
+        try:
+            with replacement.ownership(root):
+                replacement.mark_ambiguous(root)
+                before_retry = replacement.ledger(root)
+                with pytest.raises(BoundaryError, match="ceiling") as refused:
+                    engine._provider_turn(
+                        root,
+                        root,
+                        config,
+                        RetryPaid(),
+                        "policy",
+                        [{"role": "user", "content": "q"}],
+                        "parent",
+                        1,
+                    )
+                after_retry = replacement.ledger(root)
+            receipts = [json.loads(line) for line in receipt_path.read_text().splitlines()]
+            proof = {
+                "scope": "production mark_ambiguous + Engine._provider_turn recovery boundary",
+                "classification": "synthetic blocking FakePaid; no network or API spend",
+                "root_id": root,
+                "killed_pid": proc.pid,
+                "exitcode": proc.exitcode,
+                "transport_receipts": receipts,
+                "actual_send_count": len(receipts),
+                "ledger_before_retry": before_retry,
+                "ledger_after_retry": after_retry,
+                "retry_refusal": str(refused.value),
+                "actual_api_spend_usd": 0,
+            }
+            (store.directory / "blocking-transport-crash-proof.json").write_text(
+                json.dumps(proof, indent=2)
+            )
+            assert len(receipts) == 1 and before_retry == after_retry
+            assert len(after_retry) == 1
+            row = after_retry[0]
+            assert row["id"] == dispatched[0]["id"] and row["state"] == "ambiguous"
+            assert row["charged_tokens"] == 10010 and row["charged_cost"] == 0.03
+            assert row["actual_usage"] is None
+        finally:
+            engine.tracer_provider.shutdown()
+    finally:
+        if proc.is_alive():
+            _kill(proc)
+        pipe.close()
+
+
 def test_kill_after_dispatch_unknown_outcome(store):
+    _assert_blocking_transport_crash_retry(store)
     _ledger_kill_test(store, True)
 
 

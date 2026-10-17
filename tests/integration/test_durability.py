@@ -223,7 +223,65 @@ def test_missing_or_rejected_verdict_rejected(store):
     assert store.report(root) is None
 
 
+def _assert_failed_reviewer_publication_boundary(store):
+    proofs = []
+    artifact = store.directory / "failed-reviewer-publication-proof.json"
+    for child_status in ["failed", "pending", "running"]:
+        root, eid, child = publication(store)
+        store.status(child, child_status)
+        root_status_before = store.run(root)["status"]
+        refusal = None
+        result = None
+        with store.ownership(root):
+            try:
+                result = store.publish(root, "child-status-pub", report(eid))
+            except BoundaryError as error:
+                refusal = str(error)
+        with sqlite3.connect(store.path) as db:
+            report_count = db.execute(
+                "SELECT count(*) FROM reports WHERE root_id=?", (root,)
+            ).fetchone()[0]
+            total_calls = db.execute(
+                "SELECT count(*) FROM calls WHERE run_id=? AND name='publish'", (root,)
+            ).fetchone()[0]
+            completed_calls = db.execute(
+                "SELECT count(*) FROM calls WHERE run_id=? "
+                "AND name='publish' AND state='completed'",
+                (root,),
+            ).fetchone()[0]
+            root_status = db.execute("SELECT status FROM runs WHERE id=?", (root,)).fetchone()[0]
+        proof = {
+            "root_id": root,
+            "child_id": child,
+            "child_status": child_status,
+            "accepted_verdict": store.verdict(root),
+            "publication_result": result,
+            "refusal": refusal,
+            "report_count": report_count,
+            "completed_publication_calls": completed_calls,
+            "total_publication_calls": total_calls,
+            "root_status_before": root_status_before,
+            "child_status_after": store.run(child)["status"],
+            "root_status": root_status,
+            "actual_process_imports": _transport_import_identity(),
+        }
+        proofs.append(proof)
+        artifact.write_text(json.dumps(proofs, indent=2))
+        assert proof["child_status_after"] == child_status
+        if child_status == "failed":
+            assert refusal == "publication rejects a failed reviewer child" and result is None
+            assert report_count == completed_calls == total_calls == 0
+            assert root_status == root_status_before
+        else:
+            # Valid verdict committed before child-status persistence is a
+            # supported crash window; do not require terminal completed here.
+            assert refusal is None and result == {"published": True, "report_key": root}
+            assert report_count == completed_calls == total_calls == 1
+            assert root_status == "completed"
+
+
 def test_evidence_root_dataset_verdict_binding(store):
+    _assert_failed_reviewer_publication_boundary(store)
     root, eid, child = publication(store)
     other = raw_run(store)
     with pytest.raises(BoundaryError):

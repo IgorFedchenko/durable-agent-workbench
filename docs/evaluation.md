@@ -14,16 +14,18 @@ Four semantic verification mutations target ownership, publication evidence bind
 
 ## Measured local baseline
 
-One local scripted **systems benchmark** at source `f030712141b3571fa8fe52c31f7fa439a3cb196d` achieved **10/10 expected outcomes and 9 published reports**; reviewer rejection correctly published none. Real Docker execution and process recovery ran with author-written provider responses. This measures systems behavior, not model accuracy or provider latency.
+One local scripted **systems benchmark** at source `f075ab8c16406283ed25d724a6df86960713c5bd` achieved **10/10 expected outcomes and 9 published reports**; reviewer rejection correctly published none. Real Docker execution and process recovery ran with author-written provider responses. This measures systems behavior, not model accuracy or provider latency.
 
 | Measurement | Observed in this run | Frozen requirement per case |
 | --- | --- | --- |
-| Scenario wall time | 9.782 s summed; 1.961 s slowest case | ≤180 s |
+| Scenario wall time | 7.439 s summed; 1.442 s slowest case | ≤180 s |
 | Parent + child execution steps | 13 maximum per case | ≤24 |
 | Authored synthetic tokens | 1,620 maximum per case | ≤20,000 |
 | Actual API spend | $0 | $0 |
 
-Timings are host-specific scenario measurements, excluding environment setup, queueing and the separate full test suite. The unchanged [raw benchmark](benchmarks/scripted-f030712.json) records full source/image/input hashes, observations and recovery proofs. Its SHA-256 is `7bab8a38e5eae8857a43ad5b0561c768ec7b5227d0e5d21e5361616b2e1e0cfd`.
+Timings are host-specific scenario measurements, excluding environment setup, queueing and the separate full test suite. The unchanged [raw benchmark](benchmarks/scripted-f075ab8.json) records full source/image/input hashes, observations and recovery proofs. Its SHA-256 is `7c7db97da5930b1125cf3365d3cae79f6f1b198f8a63c78dffeb176161577cc0`. The interruption case records a SIGKILLed worker (−9), successful replacement (0), and one analysis launch both before and after recovery.
+
+The earlier [f030712 baseline](benchmarks/scripted-f030712.json) remains unchanged for comparison: SHA-256 `7bab8a38e5eae8857a43ad5b0561c768ec7b5227d0e5d21e5361616b2e1e0cfd`. Each JSON identifies its own measured source; neither artifact is relabeled as a later documentation commit.
 
 ## Judge scope
 

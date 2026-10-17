@@ -1,0 +1,803 @@
+{
+  "schema_version": 1,
+  "code": {
+    "git_sha": "f030712141b3571fa8fe52c31f7fa439a3cb196d",
+    "package_version": "0.1.0",
+    "source_fingerprint": "bad5d1c9addeeb2619166b44b2e7b8aa9a00f6a6e49bb006346264d3f8a898d9"
+  },
+  "evaluation": "deterministic systems outcomes; not model accuracy",
+  "usage": "labeled synthetic tokens; author-written scripted recordings",
+  "cases": [
+    {
+      "scenario": "total",
+      "passed": true,
+      "failures": [],
+      "run_id": "9567c41d-7208-4ce3-82db-8868d18e3a02",
+      "expected": {
+        "total": 175,
+        "orders": 6
+      },
+      "observed_report": {
+        "chart": [],
+        "explanation": "Revenue is units multiplied by unit price. Values are bound to immutable analysis evidence. This workflow uses author-written scripted provider responses.",
+        "facts": [
+          {
+            "citation": {
+              "evidence_id": "ev-71e67bdea14d26866c3208b3",
+              "field": "total"
+            },
+            "label": "Revenue",
+            "value": 175.0
+          },
+          {
+            "citation": {
+              "evidence_id": "ev-71e67bdea14d26866c3208b3",
+              "field": "orders"
+            },
+            "label": "Orders",
+            "value": 6.0
+          }
+        ],
+        "no_data": false,
+        "title": "Synthetic retail revenue"
+      },
+      "verdict": {
+        "accepted": true,
+        "evidence_ids": [
+          "ev-71e67bdea14d26866c3208b3"
+        ],
+        "reason": "Authored acceptance fixture: structured evidence has expected fields; deterministic golden checks independently verify arithmetic."
+      },
+      "status": "completed",
+      "metrics": {
+        "steps": 11,
+        "charged_tokens": 1380,
+        "charged_cost_usd": 0.0,
+        "usage_unknown": false,
+        "actual_api_spend_usd": 0
+      },
+      "wall_seconds": 0.8068334169220179,
+      "manifest": {
+        "config_hash": "ec295772a7c137c470e87e2ab42fcef908dcaba1f04b88861229c8e0df1d5ae6",
+        "dataset_hash": "9b2d8a342e5ade73bab9e5dbe3ed64f4ebcab091f203c76221f7711cf45bd13d",
+        "engine_behavior": "1",
+        "model": "author-written-v1",
+        "package_version": "0.1.0",
+        "pricing": {
+          "input": null,
+          "output": null
+        },
+        "prompts": {
+          "judge-v1.txt": "2737b980f57df2d53afb0a8e5e39dace921175f22e6cece2cdd843c841c244ed",
+          "parent-v1.txt": "1d36e0969a06ab92e105a78abe5bb92275aee1bfd24b27c79526497f9a9d5838",
+          "reviewer-v1.txt": "abeeb720292a3e40c50f3f45733e901c96e86981c933ecc50a9128c3eb2022c2"
+        },
+        "provider": "scripted",
+        "recording_hash": "dc0138efd5cf1247b117992241052698ecb8f1e905f2e50ac6eb7d8cde8d16cb",
+        "sandbox_image_id": "sha256:b299a6a235d150e76d18e58b4d80a1a93cad4a2389940c0a21bbb955b72e163a",
+        "source_fingerprint": "bad5d1c9addeeb2619166b44b2e7b8aa9a00f6a6e49bb006346264d3f8a898d9",
+        "state_schema": 1
+      },
+      "manifest_hash": "cbb34f65d723ac3f3b062c2a9a61affba8f85d65864b776e239053d57d8489d8",
+      "recovery": null,
+      "provider_provenance": "AUTHOR-WRITTEN SCRIPTED RECORDINGS; synthetic tokens; $0 actual API spend"
+    },
+    {
+      "scenario": "regions",
+      "passed": true,
+      "failures": [],
+      "run_id": "236d310f-b270-4a01-987f-1c1afc386f78",
+      "expected": {
+        "total": 175,
+        "orders": 6,
+        "chart": {
+          "north": 75,
+          "south": 100
+        }
+      },
+      "observed_report": {
+        "chart": [
+          {
+            "citation": {
+              "evidence_id": "ev-29972beff638df8aaee952e0",
+              "field": "regions.north"
+            },
+            "label": "north",
+            "value": 75.0
+          },
+          {
+            "citation": {
+              "evidence_id": "ev-29972beff638df8aaee952e0",
+              "field": "regions.south"
+            },
+            "label": "south",
+            "value": 100.0
+          }
+        ],
+        "explanation": "Revenue is units multiplied by unit price. Values are bound to immutable analysis evidence. This workflow uses author-written scripted provider responses.",
+        "facts": [
+          {
+            "citation": {
+              "evidence_id": "ev-29972beff638df8aaee952e0",
+              "field": "total"
+            },
+            "label": "Revenue",
+            "value": 175.0
+          },
+          {
+            "citation": {
+              "evidence_id": "ev-29972beff638df8aaee952e0",
+              "field": "orders"
+            },
+            "label": "Orders",
+            "value": 6.0
+          }
+        ],
+        "no_data": false,
+        "title": "Synthetic retail revenue"
+      },
+      "verdict": {
+        "accepted": true,
+        "evidence_ids": [
+          "ev-29972beff638df8aaee952e0"
+        ],
+        "reason": "Authored acceptance fixture: structured evidence has expected fields; deterministic golden checks independently verify arithmetic."
+      },
+      "status": "completed",
+      "metrics": {
+        "steps": 11,
+        "charged_tokens": 1380,
+        "charged_cost_usd": 0.0,
+        "usage_unknown": false,
+        "actual_api_spend_usd": 0
+      },
+      "wall_seconds": 0.845130915986374,
+      "manifest": {
+        "config_hash": "99e655e0c2e1e143e78d4a1a2bb17da5705d4a4c6f2b7375b5e072257a61d796",
+        "dataset_hash": "9b2d8a342e5ade73bab9e5dbe3ed64f4ebcab091f203c76221f7711cf45bd13d",
+        "engine_behavior": "1",
+        "model": "author-written-v1",
+        "package_version": "0.1.0",
+        "pricing": {
+          "input": null,
+          "output": null
+        },
+        "prompts": {
+          "judge-v1.txt": "2737b980f57df2d53afb0a8e5e39dace921175f22e6cece2cdd843c841c244ed",
+          "parent-v1.txt": "1d36e0969a06ab92e105a78abe5bb92275aee1bfd24b27c79526497f9a9d5838",
+          "reviewer-v1.txt": "abeeb720292a3e40c50f3f45733e901c96e86981c933ecc50a9128c3eb2022c2"
+        },
+        "provider": "scripted",
+        "recording_hash": "bb553f38196e682c4f3ef096996b0a92ad99de6536fa52144dafe379a8fe9268",
+        "sandbox_image_id": "sha256:b299a6a235d150e76d18e58b4d80a1a93cad4a2389940c0a21bbb955b72e163a",
+        "source_fingerprint": "bad5d1c9addeeb2619166b44b2e7b8aa9a00f6a6e49bb006346264d3f8a898d9",
+        "state_schema": 1
+      },
+      "manifest_hash": "92d624fb07bb79b2deac2cb01d7c4c3acb710e5d25cae503eee702f1d0ecee3a",
+      "recovery": null,
+      "provider_provenance": "AUTHOR-WRITTEN SCRIPTED RECORDINGS; synthetic tokens; $0 actual API spend"
+    },
+    {
+      "scenario": "months",
+      "passed": true,
+      "failures": [],
+      "run_id": "5299db72-a559-4695-b204-77fbdba1ba49",
+      "expected": {
+        "total": 175,
+        "orders": 6,
+        "chart": {
+          "2026-01": 30,
+          "2026-02": 80,
+          "2026-03": 65
+        }
+      },
+      "observed_report": {
+        "chart": [
+          {
+            "citation": {
+              "evidence_id": "ev-7a74b87d75c124e7f4f1ffc3",
+              "field": "months.2026-01"
+            },
+            "label": "2026-01",
+            "value": 30.0
+          },
+          {
+            "citation": {
+              "evidence_id": "ev-7a74b87d75c124e7f4f1ffc3",
+              "field": "months.2026-02"
+            },
+            "label": "2026-02",
+            "value": 80.0
+          },
+          {
+            "citation": {
+              "evidence_id": "ev-7a74b87d75c124e7f4f1ffc3",
+              "field": "months.2026-03"
+            },
+            "label": "2026-03",
+            "value": 65.0
+          }
+        ],
+        "explanation": "Revenue is units multiplied by unit price. Values are bound to immutable analysis evidence. This workflow uses author-written scripted provider responses.",
+        "facts": [
+          {
+            "citation": {
+              "evidence_id": "ev-7a74b87d75c124e7f4f1ffc3",
+              "field": "total"
+            },
+            "label": "Revenue",
+            "value": 175.0
+          },
+          {
+            "citation": {
+              "evidence_id": "ev-7a74b87d75c124e7f4f1ffc3",
+              "field": "orders"
+            },
+            "label": "Orders",
+            "value": 6.0
+          }
+        ],
+        "no_data": false,
+        "title": "Synthetic retail revenue"
+      },
+      "verdict": {
+        "accepted": true,
+        "evidence_ids": [
+          "ev-7a74b87d75c124e7f4f1ffc3"
+        ],
+        "reason": "Authored acceptance fixture: structured evidence has expected fields; deterministic golden checks independently verify arithmetic."
+      },
+      "status": "completed",
+      "metrics": {
+        "steps": 11,
+        "charged_tokens": 1380,
+        "charged_cost_usd": 0.0,
+        "usage_unknown": false,
+        "actual_api_spend_usd": 0
+      },
+      "wall_seconds": 0.7529931670287624,
+      "manifest": {
+        "config_hash": "402d343ebb9bf882e83fdbb0cd41ccf2d5081d921968d900bec70d8be935e6b5",
+        "dataset_hash": "9b2d8a342e5ade73bab9e5dbe3ed64f4ebcab091f203c76221f7711cf45bd13d",
+        "engine_behavior": "1",
+        "model": "author-written-v1",
+        "package_version": "0.1.0",
+        "pricing": {
+          "input": null,
+          "output": null
+        },
+        "prompts": {
+          "judge-v1.txt": "2737b980f57df2d53afb0a8e5e39dace921175f22e6cece2cdd843c841c244ed",
+          "parent-v1.txt": "1d36e0969a06ab92e105a78abe5bb92275aee1bfd24b27c79526497f9a9d5838",
+          "reviewer-v1.txt": "abeeb720292a3e40c50f3f45733e901c96e86981c933ecc50a9128c3eb2022c2"
+        },
+        "provider": "scripted",
+        "recording_hash": "64d3ae00ff1f14cfe5229fb2e2728d81729b1218bcd3cad4a52988d4afe94147",
+        "sandbox_image_id": "sha256:b299a6a235d150e76d18e58b4d80a1a93cad4a2389940c0a21bbb955b72e163a",
+        "source_fingerprint": "bad5d1c9addeeb2619166b44b2e7b8aa9a00f6a6e49bb006346264d3f8a898d9",
+        "state_schema": 1
+      },
+      "manifest_hash": "2463d9f6cd05155bbdcc3c70d1484798b0c823bce1fb792de23c73c6d360a942",
+      "recovery": null,
+      "provider_provenance": "AUTHOR-WRITTEN SCRIPTED RECORDINGS; synthetic tokens; $0 actual API spend"
+    },
+    {
+      "scenario": "filter",
+      "passed": true,
+      "failures": [],
+      "run_id": "d5151652-637f-4b83-abe2-0e47a983adbc",
+      "expected": {
+        "total": 75,
+        "orders": 2
+      },
+      "observed_report": {
+        "chart": [],
+        "explanation": "Revenue is units multiplied by unit price. Values are bound to immutable analysis evidence. This workflow uses author-written scripted provider responses.",
+        "facts": [
+          {
+            "citation": {
+              "evidence_id": "ev-4b26df164895679404938c0b",
+              "field": "total"
+            },
+            "label": "Revenue",
+            "value": 75.0
+          },
+          {
+            "citation": {
+              "evidence_id": "ev-4b26df164895679404938c0b",
+              "field": "orders"
+            },
+            "label": "Orders",
+            "value": 2.0
+          }
+        ],
+        "no_data": false,
+        "title": "Synthetic retail revenue"
+      },
+      "verdict": {
+        "accepted": true,
+        "evidence_ids": [
+          "ev-4b26df164895679404938c0b"
+        ],
+        "reason": "Authored acceptance fixture: structured evidence has expected fields; deterministic golden checks independently verify arithmetic."
+      },
+      "status": "completed",
+      "metrics": {
+        "steps": 11,
+        "charged_tokens": 1380,
+        "charged_cost_usd": 0.0,
+        "usage_unknown": false,
+        "actual_api_spend_usd": 0
+      },
+      "wall_seconds": 0.8991369580617175,
+      "manifest": {
+        "config_hash": "35b23d591729a0aecbbf9697de6fa17ce3d3b1a63fed9ab0fe58237f64a1146e",
+        "dataset_hash": "9b2d8a342e5ade73bab9e5dbe3ed64f4ebcab091f203c76221f7711cf45bd13d",
+        "engine_behavior": "1",
+        "model": "author-written-v1",
+        "package_version": "0.1.0",
+        "pricing": {
+          "input": null,
+          "output": null
+        },
+        "prompts": {
+          "judge-v1.txt": "2737b980f57df2d53afb0a8e5e39dace921175f22e6cece2cdd843c841c244ed",
+          "parent-v1.txt": "1d36e0969a06ab92e105a78abe5bb92275aee1bfd24b27c79526497f9a9d5838",
+          "reviewer-v1.txt": "abeeb720292a3e40c50f3f45733e901c96e86981c933ecc50a9128c3eb2022c2"
+        },
+        "provider": "scripted",
+        "recording_hash": "43f3816547cd79bcd097eeb3e0628d20ade0b4e5144d5253b1303be89e7d56de",
+        "sandbox_image_id": "sha256:b299a6a235d150e76d18e58b4d80a1a93cad4a2389940c0a21bbb955b72e163a",
+        "source_fingerprint": "bad5d1c9addeeb2619166b44b2e7b8aa9a00f6a6e49bb006346264d3f8a898d9",
+        "state_schema": 1
+      },
+      "manifest_hash": "2730701c6e0fec833c643554f790ea5559647cdf3f4fbf3fa7cf0d8d13eb100b",
+      "recovery": null,
+      "provider_provenance": "AUTHOR-WRITTEN SCRIPTED RECORDINGS; synthetic tokens; $0 actual API spend"
+    },
+    {
+      "scenario": "empty-filter",
+      "passed": true,
+      "failures": [],
+      "run_id": "1f25641a-d87e-47b5-8f9d-4e6720d1dcb4",
+      "expected": {
+        "total": 0,
+        "orders": 0,
+        "no_data": true
+      },
+      "observed_report": {
+        "chart": [],
+        "explanation": "No matching orders; no data.",
+        "facts": [
+          {
+            "citation": {
+              "evidence_id": "ev-21ab374ec989c5bc4b45918a",
+              "field": "total"
+            },
+            "label": "Revenue",
+            "value": 0.0
+          },
+          {
+            "citation": {
+              "evidence_id": "ev-21ab374ec989c5bc4b45918a",
+              "field": "orders"
+            },
+            "label": "Orders",
+            "value": 0.0
+          }
+        ],
+        "no_data": true,
+        "title": "Synthetic retail revenue"
+      },
+      "verdict": {
+        "accepted": true,
+        "evidence_ids": [
+          "ev-21ab374ec989c5bc4b45918a"
+        ],
+        "reason": "Authored acceptance fixture: structured evidence has expected fields; deterministic golden checks independently verify arithmetic."
+      },
+      "status": "completed",
+      "metrics": {
+        "steps": 11,
+        "charged_tokens": 1380,
+        "charged_cost_usd": 0.0,
+        "usage_unknown": false,
+        "actual_api_spend_usd": 0
+      },
+      "wall_seconds": 0.8650909590069205,
+      "manifest": {
+        "config_hash": "0e690f8f29e93ca8b8467f03e7db46d9fd6a28c0a1acd1940e2fcf047a26ccc8",
+        "dataset_hash": "9b2d8a342e5ade73bab9e5dbe3ed64f4ebcab091f203c76221f7711cf45bd13d",
+        "engine_behavior": "1",
+        "model": "author-written-v1",
+        "package_version": "0.1.0",
+        "pricing": {
+          "input": null,
+          "output": null
+        },
+        "prompts": {
+          "judge-v1.txt": "2737b980f57df2d53afb0a8e5e39dace921175f22e6cece2cdd843c841c244ed",
+          "parent-v1.txt": "1d36e0969a06ab92e105a78abe5bb92275aee1bfd24b27c79526497f9a9d5838",
+          "reviewer-v1.txt": "abeeb720292a3e40c50f3f45733e901c96e86981c933ecc50a9128c3eb2022c2"
+        },
+        "provider": "scripted",
+        "recording_hash": "758346c9e40520859420f0d55b2a063f3352a6d2b1593a9ca405a98e33267a2b",
+        "sandbox_image_id": "sha256:b299a6a235d150e76d18e58b4d80a1a93cad4a2389940c0a21bbb955b72e163a",
+        "source_fingerprint": "bad5d1c9addeeb2619166b44b2e7b8aa9a00f6a6e49bb006346264d3f8a898d9",
+        "state_schema": 1
+      },
+      "manifest_hash": "16ae25956435786f74df0ee80a67c31db05d5b3d3e4ac7780bcf9044db10367f",
+      "recovery": null,
+      "provider_provenance": "AUTHOR-WRITTEN SCRIPTED RECORDINGS; synthetic tokens; $0 actual API spend"
+    },
+    {
+      "scenario": "repair",
+      "passed": true,
+      "failures": [],
+      "run_id": "a1ea326a-7c3c-4493-bfca-795b80d513c9",
+      "expected": {
+        "total": 175,
+        "orders": 6,
+        "analysis_failure": true
+      },
+      "observed_report": {
+        "chart": [],
+        "explanation": "Revenue is units multiplied by unit price. Values are bound to immutable analysis evidence. This workflow uses author-written scripted provider responses.",
+        "facts": [
+          {
+            "citation": {
+              "evidence_id": "ev-bd91312642705b77124ec001",
+              "field": "total"
+            },
+            "label": "Revenue",
+            "value": 175.0
+          },
+          {
+            "citation": {
+              "evidence_id": "ev-bd91312642705b77124ec001",
+              "field": "orders"
+            },
+            "label": "Orders",
+            "value": 6.0
+          }
+        ],
+        "no_data": false,
+        "title": "Synthetic retail revenue"
+      },
+      "verdict": {
+        "accepted": true,
+        "evidence_ids": [
+          "ev-bd91312642705b77124ec001"
+        ],
+        "reason": "Authored acceptance fixture: structured evidence has expected fields; deterministic golden checks independently verify arithmetic."
+      },
+      "status": "completed",
+      "metrics": {
+        "steps": 13,
+        "charged_tokens": 1620,
+        "charged_cost_usd": 0.0,
+        "usage_unknown": false,
+        "actual_api_spend_usd": 0
+      },
+      "wall_seconds": 1.2400301250163466,
+      "manifest": {
+        "config_hash": "b0c6d31ca8e5b72fff3c008469e6fd244359042765c01398c08971777b0d2f8a",
+        "dataset_hash": "9b2d8a342e5ade73bab9e5dbe3ed64f4ebcab091f203c76221f7711cf45bd13d",
+        "engine_behavior": "1",
+        "model": "author-written-v1",
+        "package_version": "0.1.0",
+        "pricing": {
+          "input": null,
+          "output": null
+        },
+        "prompts": {
+          "judge-v1.txt": "2737b980f57df2d53afb0a8e5e39dace921175f22e6cece2cdd843c841c244ed",
+          "parent-v1.txt": "1d36e0969a06ab92e105a78abe5bb92275aee1bfd24b27c79526497f9a9d5838",
+          "reviewer-v1.txt": "abeeb720292a3e40c50f3f45733e901c96e86981c933ecc50a9128c3eb2022c2"
+        },
+        "provider": "scripted",
+        "recording_hash": "9f20ccba18bc2c162410bcff1eab2367a3c37586759736bad9cf5afd5bdf5ab4",
+        "sandbox_image_id": "sha256:b299a6a235d150e76d18e58b4d80a1a93cad4a2389940c0a21bbb955b72e163a",
+        "source_fingerprint": "bad5d1c9addeeb2619166b44b2e7b8aa9a00f6a6e49bb006346264d3f8a898d9",
+        "state_schema": 1
+      },
+      "manifest_hash": "83f9a40a6c06a33a86bbfa114d9c232975e47980b953df963216b65017074bf4",
+      "recovery": null,
+      "provider_provenance": "AUTHOR-WRITTEN SCRIPTED RECORDINGS; synthetic tokens; $0 actual API spend"
+    },
+    {
+      "scenario": "injection",
+      "passed": true,
+      "failures": [],
+      "run_id": "59c4a4e2-d90c-45ef-aaba-4778651ffc58",
+      "expected": {
+        "total": 175,
+        "orders": 6
+      },
+      "observed_report": {
+        "chart": [],
+        "explanation": "Revenue is units multiplied by unit price. Values are bound to immutable analysis evidence. This workflow uses author-written scripted provider responses.",
+        "facts": [
+          {
+            "citation": {
+              "evidence_id": "ev-7e0dfe52f11d6de5251fa573",
+              "field": "total"
+            },
+            "label": "Revenue",
+            "value": 175.0
+          },
+          {
+            "citation": {
+              "evidence_id": "ev-7e0dfe52f11d6de5251fa573",
+              "field": "orders"
+            },
+            "label": "Orders",
+            "value": 6.0
+          }
+        ],
+        "no_data": false,
+        "title": "Synthetic retail revenue"
+      },
+      "verdict": {
+        "accepted": true,
+        "evidence_ids": [
+          "ev-7e0dfe52f11d6de5251fa573"
+        ],
+        "reason": "Authored acceptance fixture: structured evidence has expected fields; deterministic golden checks independently verify arithmetic."
+      },
+      "status": "completed",
+      "metrics": {
+        "steps": 11,
+        "charged_tokens": 1380,
+        "charged_cost_usd": 0.0,
+        "usage_unknown": false,
+        "actual_api_spend_usd": 0
+      },
+      "wall_seconds": 0.7895435830578208,
+      "manifest": {
+        "config_hash": "f1c1cb36107ef1d7fe546315fcd769e837324e1b47f85298484faa593a7f387e",
+        "dataset_hash": "9b8c2013ac06906db96a3c3fd0412ecd2b411f4ab6d30400b1c581141973d5da",
+        "engine_behavior": "1",
+        "model": "author-written-v1",
+        "package_version": "0.1.0",
+        "pricing": {
+          "input": null,
+          "output": null
+        },
+        "prompts": {
+          "judge-v1.txt": "2737b980f57df2d53afb0a8e5e39dace921175f22e6cece2cdd843c841c244ed",
+          "parent-v1.txt": "1d36e0969a06ab92e105a78abe5bb92275aee1bfd24b27c79526497f9a9d5838",
+          "reviewer-v1.txt": "abeeb720292a3e40c50f3f45733e901c96e86981c933ecc50a9128c3eb2022c2"
+        },
+        "provider": "scripted",
+        "recording_hash": "8d187631a2ee5b0b4480dd09966432619ac533021887d3190ce3878701b66e49",
+        "sandbox_image_id": "sha256:b299a6a235d150e76d18e58b4d80a1a93cad4a2389940c0a21bbb955b72e163a",
+        "source_fingerprint": "bad5d1c9addeeb2619166b44b2e7b8aa9a00f6a6e49bb006346264d3f8a898d9",
+        "state_schema": 1
+      },
+      "manifest_hash": "9717538bb8a361ceb0861c3030cfb5cf08ce22843e42c6da0431bf8b5659c8a2",
+      "recovery": null,
+      "provider_provenance": "AUTHOR-WRITTEN SCRIPTED RECORDINGS; synthetic tokens; $0 actual API spend"
+    },
+    {
+      "scenario": "compaction",
+      "passed": true,
+      "failures": [],
+      "run_id": "acdf4c2e-1998-4527-a34d-cc3195cb7fc8",
+      "expected": {
+        "total": 175,
+        "orders": 6,
+        "compaction": true,
+        "late_retrieval": true
+      },
+      "observed_report": {
+        "chart": [],
+        "explanation": "Revenue is units multiplied by unit price. Values are bound to immutable analysis evidence. This workflow uses author-written scripted provider responses.",
+        "facts": [
+          {
+            "citation": {
+              "evidence_id": "ev-ec55f2131eaab137eff00ada",
+              "field": "total"
+            },
+            "label": "Revenue",
+            "value": 175.0
+          },
+          {
+            "citation": {
+              "evidence_id": "ev-ec55f2131eaab137eff00ada",
+              "field": "orders"
+            },
+            "label": "Orders",
+            "value": 6.0
+          }
+        ],
+        "no_data": false,
+        "title": "Synthetic retail revenue"
+      },
+      "verdict": {
+        "accepted": true,
+        "evidence_ids": [
+          "ev-ec55f2131eaab137eff00ada"
+        ],
+        "reason": "Authored acceptance fixture: structured evidence has expected fields; deterministic golden checks independently verify arithmetic."
+      },
+      "status": "completed",
+      "metrics": {
+        "steps": 13,
+        "charged_tokens": 1620,
+        "charged_cost_usd": 0.0,
+        "usage_unknown": false,
+        "actual_api_spend_usd": 0
+      },
+      "wall_seconds": 0.780489334021695,
+      "manifest": {
+        "config_hash": "edf8cb3825260dd6518b61b1ace6572f1eeda11a4e0ad35422b54f9ab0456af6",
+        "dataset_hash": "9b2d8a342e5ade73bab9e5dbe3ed64f4ebcab091f203c76221f7711cf45bd13d",
+        "engine_behavior": "1",
+        "model": "author-written-v1",
+        "package_version": "0.1.0",
+        "pricing": {
+          "input": null,
+          "output": null
+        },
+        "prompts": {
+          "judge-v1.txt": "2737b980f57df2d53afb0a8e5e39dace921175f22e6cece2cdd843c841c244ed",
+          "parent-v1.txt": "1d36e0969a06ab92e105a78abe5bb92275aee1bfd24b27c79526497f9a9d5838",
+          "reviewer-v1.txt": "abeeb720292a3e40c50f3f45733e901c96e86981c933ecc50a9128c3eb2022c2"
+        },
+        "provider": "scripted",
+        "recording_hash": "370552d01a7533a66d827bd547fb92c543320a01d933f2d70b2e153c2ea0e991",
+        "sandbox_image_id": "sha256:b299a6a235d150e76d18e58b4d80a1a93cad4a2389940c0a21bbb955b72e163a",
+        "source_fingerprint": "bad5d1c9addeeb2619166b44b2e7b8aa9a00f6a6e49bb006346264d3f8a898d9",
+        "state_schema": 1
+      },
+      "manifest_hash": "1f040dc697e044e0947d87f959ebea8338b8d7d97e7952d825020fb656217f1e",
+      "recovery": null,
+      "provider_provenance": "AUTHOR-WRITTEN SCRIPTED RECORDINGS; synthetic tokens; $0 actual API spend"
+    },
+    {
+      "scenario": "interruption",
+      "passed": true,
+      "failures": [],
+      "run_id": "ea75d14c-7430-43b0-9679-c1104bd10d31",
+      "expected": {
+        "total": 175,
+        "orders": 6,
+        "process_kill_resume": true
+      },
+      "observed_report": {
+        "chart": [],
+        "explanation": "Revenue is units multiplied by unit price. Values are bound to immutable analysis evidence. This workflow uses author-written scripted provider responses.",
+        "facts": [
+          {
+            "citation": {
+              "evidence_id": "ev-698d65ce81d5e85e707fb14d",
+              "field": "total"
+            },
+            "label": "Revenue",
+            "value": 175.0
+          },
+          {
+            "citation": {
+              "evidence_id": "ev-698d65ce81d5e85e707fb14d",
+              "field": "orders"
+            },
+            "label": "Orders",
+            "value": 6.0
+          }
+        ],
+        "no_data": false,
+        "title": "Synthetic retail revenue"
+      },
+      "verdict": {
+        "accepted": true,
+        "evidence_ids": [
+          "ev-698d65ce81d5e85e707fb14d"
+        ],
+        "reason": "Authored acceptance fixture: structured evidence has expected fields; deterministic golden checks independently verify arithmetic."
+      },
+      "status": "completed",
+      "metrics": {
+        "steps": 11,
+        "charged_tokens": 1380,
+        "charged_cost_usd": 0.0,
+        "usage_unknown": false,
+        "actual_api_spend_usd": 0
+      },
+      "wall_seconds": 1.9610981659498066,
+      "manifest": {
+        "config_hash": "34b0e48089fa48ef483fccc4a2f01559ae848f59640db9843b623ebf28b3bea3",
+        "dataset_hash": "9b2d8a342e5ade73bab9e5dbe3ed64f4ebcab091f203c76221f7711cf45bd13d",
+        "engine_behavior": "1",
+        "model": "author-written-v1",
+        "package_version": "0.1.0",
+        "pricing": {
+          "input": null,
+          "output": null
+        },
+        "prompts": {
+          "judge-v1.txt": "2737b980f57df2d53afb0a8e5e39dace921175f22e6cece2cdd843c841c244ed",
+          "parent-v1.txt": "1d36e0969a06ab92e105a78abe5bb92275aee1bfd24b27c79526497f9a9d5838",
+          "reviewer-v1.txt": "abeeb720292a3e40c50f3f45733e901c96e86981c933ecc50a9128c3eb2022c2"
+        },
+        "provider": "scripted",
+        "recording_hash": "e024eff17ecf2a50d97ec4f2aaf784935c6ace7393e615cb0878ce594f7457ba",
+        "sandbox_image_id": "sha256:b299a6a235d150e76d18e58b4d80a1a93cad4a2389940c0a21bbb955b72e163a",
+        "source_fingerprint": "bad5d1c9addeeb2619166b44b2e7b8aa9a00f6a6e49bb006346264d3f8a898d9",
+        "state_schema": 1
+      },
+      "manifest_hash": "f11268a1006eb702965886ff072948b38c12b98da17ff326bd05d137c4860626",
+      "recovery": {
+        "worker_pid": 11571,
+        "exitcode": -9,
+        "replacement_exitcode": 0,
+        "barrier": {
+          "committed": true,
+          "run_id": "ea75d14c-7430-43b0-9679-c1104bd10d31"
+        },
+        "analysis_launches_before": 1,
+        "analysis_launches_after": 1
+      },
+      "provider_provenance": "AUTHOR-WRITTEN SCRIPTED RECORDINGS; synthetic tokens; $0 actual API spend"
+    },
+    {
+      "scenario": "reviewer-rejection",
+      "passed": true,
+      "failures": [],
+      "run_id": "3d9eaca9-acf2-4556-aba8-9a8797721960",
+      "expected": {
+        "rejected": true,
+        "reports": 0
+      },
+      "observed_report": null,
+      "verdict": {
+        "accepted": false,
+        "evidence_ids": [
+          "ev-861d1c9936b976b6be3ed370"
+        ],
+        "reason": "Authored rejection fixture: publication must be refused."
+      },
+      "status": "failed",
+      "metrics": {
+        "steps": 11,
+        "charged_tokens": 1380,
+        "charged_cost_usd": 0.0,
+        "usage_unknown": false,
+        "actual_api_spend_usd": 0
+      },
+      "wall_seconds": 0.8412312499713153,
+      "manifest": {
+        "config_hash": "9502e30691e7648fa190c7dbb27d107e6d83cdef2387df596d6a279e13efcda1",
+        "dataset_hash": "9b2d8a342e5ade73bab9e5dbe3ed64f4ebcab091f203c76221f7711cf45bd13d",
+        "engine_behavior": "1",
+        "model": "author-written-v1",
+        "package_version": "0.1.0",
+        "pricing": {
+          "input": null,
+          "output": null
+        },
+        "prompts": {
+          "judge-v1.txt": "2737b980f57df2d53afb0a8e5e39dace921175f22e6cece2cdd843c841c244ed",
+          "parent-v1.txt": "1d36e0969a06ab92e105a78abe5bb92275aee1bfd24b27c79526497f9a9d5838",
+          "reviewer-v1.txt": "abeeb720292a3e40c50f3f45733e901c96e86981c933ecc50a9128c3eb2022c2"
+        },
+        "provider": "scripted",
+        "recording_hash": "6e467d98313f78a1737c7faff951ee741d33fa8ae6b90a1e9a543ca6e10320a4",
+        "sandbox_image_id": "sha256:b299a6a235d150e76d18e58b4d80a1a93cad4a2389940c0a21bbb955b72e163a",
+        "source_fingerprint": "bad5d1c9addeeb2619166b44b2e7b8aa9a00f6a6e49bb006346264d3f8a898d9",
+        "state_schema": 1
+      },
+      "manifest_hash": "d5bfe933e6e8bfd77aa2373a175343185970d563722dd15fc7595bc407081618",
+      "recovery": null,
+      "provider_provenance": "AUTHOR-WRITTEN SCRIPTED RECORDINGS; synthetic tokens; $0 actual API spend"
+    }
+  ],
+  "aggregate": {
+    "passed": true,
+    "scenario_outcomes_passed": 10,
+    "mandatory_cases": 10,
+    "published_reports": 9,
+    "actual_api_spend_usd": 0,
+    "wall_seconds": 9.781577875022776
+  }
+}

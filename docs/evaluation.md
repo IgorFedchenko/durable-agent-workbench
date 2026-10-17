@@ -8,9 +8,22 @@ Run `make eval` against actual Docker. The runner executes all ten cases, includ
 
 The acceptance gate requires ten of ten expected outcomes, at most 24 aggregate steps and 20,000 labeled synthetic tokens per case, and a 180-second case ceiling. Steps count provider attempts and new tool attempts across parent/reviewer/retries. Latency is measured on the executing host and is not a cross-host speed comparison. Missing, duplicate, skipped or timed-out mandatory cases fail. Independent tests calculate their own arithmetic from literal rows; they must not import expected answers from recordings.
 
-Safety/recovery checks and negative controls are also mandatory: consistently wrong 174 analysis despite agreeing scripted actors; altered/uncited/foreign numeric citations; rejected/missing reviewer; wrong call identity; forbidden/multiple calls; malformed/refused/truncated SDK output; absent live prices/usage; process ownership/crashes; effective Docker boundaries; web request protections and escaped rendering. `evals/checks.json` freezes exact per-job module/function IDs, including each provider parameter variant. CI rejects missing, wrong-job, duplicate, unexpected, skipped/error or zero-collection cases in any required suite. A strict benchmark schema checks complete provenance, metrics, numeric observations, case/aggregate agreement and frozen ceilings rather than trusting passed booleans. All required suites enforce strict XPASS handling through the installed pytest policy. Per-test `strict=False` cannot weaken it; any residual XPASS becomes a failed JUnit result. Expected xfail and skipped results also fail acceptance. Tests are developed independently from the golden specification.
+Safety/recovery checks and negative controls are also mandatory: consistently wrong 174 analysis despite agreeing scripted actors; altered/uncited/foreign numeric citations; rejected/missing reviewer; wrong call identity; forbidden/multiple calls; malformed/refused/truncated SDK output; absent live prices/usage; process ownership/crashes; effective Docker boundaries; web request protections and escaped rendering. `evals/checks.json` freezes exact per-job module/function IDs, including each provider parameter variant. The acceptance checker rejects missing, wrong-job, duplicate, unexpected, skipped/error or zero-collection cases in any required suite. A strict benchmark schema checks complete provenance, metrics, numeric observations, case/aggregate agreement and frozen ceilings rather than trusting passed booleans. All required suites enforce strict XPASS handling through the installed pytest policy. Per-test `strict=False` cannot weaken it; any residual XPASS becomes a failed JUnit result. Expected xfail and skipped results also fail acceptance. Tests are developed independently from the golden specification.
 
 Four semantic verification mutations target ownership, publication evidence binding, durable reservation and runtime networking. Each must make its corresponding invariant assertion fail, then the restored check/full suite must pass. A syntax error or test collection failure is not a valid mutation kill.
+
+## Measured local baseline
+
+One local scripted **systems benchmark** at source `f030712141b3571fa8fe52c31f7fa439a3cb196d` achieved **10/10 expected outcomes and 9 published reports**; reviewer rejection correctly published none. Real Docker execution and process recovery ran with author-written provider responses. This measures systems behavior, not model accuracy or provider latency.
+
+| Measurement | Observed in this run | Frozen requirement per case |
+| --- | --- | --- |
+| Scenario wall time | 9.782 s summed; 1.961 s slowest case | ≤180 s |
+| Parent + child execution steps | 13 maximum per case | ≤24 |
+| Authored synthetic tokens | 1,620 maximum per case | ≤20,000 |
+| Actual API spend | $0 | $0 |
+
+Timings are host-specific scenario measurements, excluding environment setup, queueing and the separate full test suite. The unchanged [raw benchmark](benchmarks/scripted-f030712.json) records full source/image/input hashes, observations and recovery proofs. Its SHA-256 is `7bab8a38e5eae8857a43ad5b0561c768ec7b5227d0e5d21e5361616b2e1e0cfd`.
 
 ## Judge scope
 
@@ -18,6 +31,6 @@ Four semantic verification mutations target ownership, publication evidence bind
 
 Optional live judging and provider smoke require explicit flags, environment keys, exact model and configured prices/output/spend bounds. Until separately executed, both SDK adapters and live judge are **contract-tested / live-unverified**. Provider-shaped tests run pinned official SDK serialization and response parsing through local synthetic HTTP transports. They are not paid provider calls.
 
-## CI
+## Local checks and retained workflow recipes
 
-Named mandatory checks cover quality, unit-contracts, durability-integration, sandbox-boundaries, browser-e2e, offline-golden, secret-scan and acceptance-gate. Docker/browser jobs must execute real infrastructure and fail on missing prerequisites. GitHub Actions pins action SHAs and uses read-only repository permissions. Default CI never invokes a paid model. CodeQL is manual opt-in and depends on private-account availability; no paid security plan is enabled. Gitleaks scans local/CI history and files independently of native GitHub feature licensing.
+GitHub Actions is disabled while this repository is private. Every retained workflow job requires a public repository; optional CodeQL/live smoke additionally require manual opt-in. No private hosted CI or paid security plan is enabled. The recipes preserve named quality, unit-contracts, durability-integration, sandbox-boundaries, browser-e2e, offline-golden, secret-scan and acceptance checks for separately approved future use. Docker/browser checks fail on missing prerequisites. Gitleaks scans local history and files independently of GitHub licensing. See [local verification](testing.md).

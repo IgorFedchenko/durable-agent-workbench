@@ -268,7 +268,122 @@ def test_publication_numeric_fields_complete(store):
             report("ev-one", value)
 
 
+def _owned_publication_process(directory, root, eid, first, connection):
+    store = Store(Path(directory))
+    identical_publish_entries = 0
+    identity = _transport_import_identity()
+    try:
+        if first:
+            with store.ownership(root):
+                connection.send({"phase": "owned", "identity": identity})
+                assert connection.recv() == "publish"
+                identical_publish_entries += 1
+                result = store.publish(root, "process-pub", report(eid))
+            connection.send(
+                {
+                    "phase": "published",
+                    "result": result,
+                    "identical_publish_entries": identical_publish_entries,
+                    "identity": identity,
+                }
+            )
+        else:
+            try:
+                with store.ownership(root):
+                    connection.send({"phase": "unexpected-owned", "identity": identity})
+                    identical_publish_entries += 1
+                    store.publish(root, "process-pub", report(eid))
+            except BusyRun:
+                connection.send(
+                    {
+                        "phase": "busy",
+                        "identical_publish_entries": identical_publish_entries,
+                        "identity": identity,
+                    }
+                )
+            assert connection.recv() == "retry"
+            with store.ownership(root):
+                identical_publish_entries += 1
+                result = store.publish(root, "process-pub", report(eid))
+                try:
+                    store.publish(root, "process-pub", report(eid, 174))
+                except BoundaryError as error:
+                    changed_refusal = str(error)
+                else:
+                    raise AssertionError("changed publication arguments accepted")
+            connection.send(
+                {
+                    "phase": "replayed",
+                    "result": result,
+                    "changed_arguments_refused": changed_refusal,
+                    "altered_argument_publish_attempts": 1,
+                    "identical_publish_entries": identical_publish_entries,
+                    "identity": identity,
+                }
+            )
+    finally:
+        connection.close()
+
+
+def _assert_two_process_publication(store):
+    root, eid, _ = publication(store)
+    a, ap = _spawn(_owned_publication_process, str(store.directory), root, eid, True)
+    b = bp = None
+    try:
+        assert ap.poll(15)
+        owned = ap.recv()
+        assert owned["phase"] == "owned" and owned["identity"]["pid"] == a.pid
+        b, bp = _spawn(_owned_publication_process, str(store.directory), root, eid, False)
+        assert bp.poll(15)
+        busy = bp.recv()
+        assert busy["phase"] == "busy" and busy["identical_publish_entries"] == 0
+        assert busy["identity"]["pid"] == b.pid and a.pid != b.pid
+        ap.send("publish")
+        assert ap.poll(15)
+        published = ap.recv()
+        a.join(5)
+        assert a.exitcode == 0
+        bp.send("retry")
+        assert bp.poll(15)
+        replayed = bp.recv()
+        b.join(5)
+        assert b.exitcode == 0
+        with sqlite3.connect(store.path) as db:
+            reports = db.execute(
+                "SELECT call_id,body FROM reports WHERE root_id=?", (root,)
+            ).fetchall()
+            calls = db.execute(
+                "SELECT state,result FROM calls WHERE run_id=? AND call_id='process-pub'", (root,)
+            ).fetchall()
+        proof = {
+            "root_id": root,
+            "owned": owned,
+            "losing_owner": busy,
+            "published": published,
+            "replayed": replayed,
+            "independent_sqlite_reports": reports,
+            "independent_sqlite_calls": calls,
+        }
+        (store.directory / "two-process-publication-proof.json").write_text(
+            json.dumps(proof, indent=2)
+        )
+        assert published["result"] == replayed["result"] == {"published": True, "report_key": root}
+        assert published["identical_publish_entries"] == replayed["identical_publish_entries"] == 1
+        assert replayed["changed_arguments_refused"]
+        assert replayed["altered_argument_publish_attempts"] == 1
+        assert len(reports) == len(calls) == 1
+        assert reports[0][0] == "process-pub" and calls[0][0] == "completed"
+        assert json.loads(calls[0][1]) == published["result"]
+    finally:
+        for proc, pipe in [(a, ap), (b, bp)]:
+            if proc is not None and proc.is_alive():
+                _kill(proc)
+            if pipe is not None:
+                pipe.close()
+
+
 def test_publication_repeated_and_contended(store):
+    _assert_two_process_publication(store)
     root, eid, _ = publication(store)
     with ThreadPoolExecutor(2) as pool:
         results = list(pool.map(lambda _: store.publish(root, "pub", report(eid)), range(4)))

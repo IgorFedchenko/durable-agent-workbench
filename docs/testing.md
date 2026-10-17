@@ -42,6 +42,15 @@ The retained hosted workflow recipe shows the five-suite report layout and `scri
 
 ## Visual evidence and limits
 
-After prerequisites, `make capture` drives the real browser/server/engine/Docker path and writes `docs/demo.gif`. A GIF is evidence only after capture succeeds; this documentation does not claim an existing recording. No screenshots or benchmark numbers are fabricated.
+After prerequisites, `make capture` drives the real browser/server/engine/Docker path. A successful full journey writes `docs/demo.gif` and `docs/portfolio-cover.png`; failure exits nonzero without publishing these assets. Fresh state and diagnostics remain under a unique ignored `.workbench/capture-*/` directory, including server logs/PID status, browser trace, a failure screenshot when available and read-only run snapshots. This retained project-local state is a diagnostic choice; it does not establish the cause of an earlier capture failure.
+
+To select fresh retained directories and a free loopback port explicitly:
+
+```sh
+uv run python scripts/capture_demo.py --data-dir .workbench/my-capture-data \
+  --evidence-dir .workbench/my-capture-evidence --port 8766
+```
+
+Both directories must not already exist. The script starts and stops only its own server and refuses an occupied port. A GIF is evidence only after capture succeeds; this documentation does not claim an existing recording. No screenshots or benchmark numbers are fabricated.
 
 The suite evaluates systems behavior with authored responses. It does not measure live model reasoning, production provider availability, cloud security, distributed execution or general truth of arbitrary generated analysis. See [threat model](threat-model.md), [providers](providers.md) and [architecture](architecture.md).

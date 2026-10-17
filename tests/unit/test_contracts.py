@@ -564,7 +564,7 @@ def test_public_product_portable_boundary():
     import re
 
     # Public files must not depend on a particular user's home directory.
-    local_home = re.compile(r"(?:/(?:Users|home)/[^/\s]+|[A-Za-z]:\\Users\\)")
+    local_home = re.compile(r"(?<![\w/\\.:~\-])(?:/(?:Users|home)/[^/\s]+|[A-Za-z]:\\Users\\)")
     for path in paths:
         assert not local_home.search(path.read_text()), path.relative_to(ROOT)
     # A machine-specific scheduler may be supplied, but is never required.

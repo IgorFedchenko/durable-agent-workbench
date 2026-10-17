@@ -54,7 +54,7 @@ A focused reviewer-binding check passed with an accepted verdict followed by an 
 
 Two focused process/context checks also passed. Separate publisher processes exercise root-lock contention: the losing owner enters publication zero times, then replays the single committed report after ownership becomes available; changed arguments reject. The context check captures actual `Engine._execute` provider inputs before and after real compaction, positively locating hostile CSV, evidence and replayed synthetic error content in untrusted messages while checking trusted policy/tool boundaries. Its failed tool result is seeded and replayed; it does not generate a Docker error or test a live model's resistance.
 
-These focused checks are also included in the 105-case pass at `4b126a3`. The benchmark measurements remain tied to `f030712`; current benchmark and media results are separate gates.
+These focused checks are also included in the 105-case pass at `4b126a3`. The benchmark measurements remain tied to `f030712`; the current benchmark remains a separate pending gate.
 
 ## Visual evidence and limits
 
@@ -67,6 +67,8 @@ uv run python scripts/capture_demo.py --data-dir .workbench/my-capture-data \
   --evidence-dir .workbench/my-capture-evidence --port 8766
 ```
 
-Both directories must not already exist. The script starts and stops only its own server and refuses an occupied port. A GIF is evidence only after capture succeeds; this documentation does not claim an existing recording. No screenshots or benchmark numbers are fabricated.
+Both directories must not already exist. The script starts and stops only its own server and refuses an occupied port. The included [GIF](demo.gif) and [1000 × 750 cover](portfolio-cover.png) were captured from the actual browser/server/engine/Docker journey at source `e5a004f36edaf0f67a5bddf5e7863c3673cdcefa`, whose runtime source fingerprint matches the full-suite source `4b126a3`. The GIF shows failed analysis, explicit resume, reviewer linkage and verified reports; the cover shows the completed regional chart and expanded reviewer timeline. Chromium rendered the cover directly; neither file was resized, reencoded after capture or fabricated.
+
+Media SHA-256: `demo.gif` — `ac3ba09fd21491389de27851918dbe939422a50f58293a18b09071e4545bf0bf`; `portfolio-cover.png` — `7cdcf4a54f78608e1f19d1b972f4e71c207af61d8640fd9099fbde9dea763773`.
 
 The suite evaluates systems behavior with authored responses. It does not measure live model reasoning, production provider availability, cloud security, distributed execution or general truth of arbitrary generated analysis. See [threat model](threat-model.md), [providers](providers.md) and [architecture](architecture.md).

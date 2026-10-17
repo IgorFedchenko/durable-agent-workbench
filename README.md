@@ -7,6 +7,10 @@ A local agent workflow that turns a synthetic retail question into isolated Pyth
 
 **Default provider responses are AUTHOR-WRITTEN SCRIPTED RECORDINGS.** They are not captured paid-model output or evidence of model intelligence. Docker, analysis, SQLite, process recovery, HTTP and chart rendering execute for real. Token counts are labeled synthetic; actual API spend is $0 offline.
 
+![Real local workflow: failed analysis, explicit resume, reviewer and evidence-bound report](docs/demo.gif)
+
+Actual browser capture of the offline workflow: repair and resume, reviewer linkage, then a regional report with cited chart values. [View the full cover screenshot](docs/portfolio-cover.png). Captured at source `e5a004f`; the runtime source fingerprint matches the tested `4b126a3` source.
+
 ```sh
 # Prerequisites: Docker Engine/Desktop with buildx, uv, Python 3.12+, local Linux/macOS filesystem.
 git clone https://github.com/IgorFedchenko/durable-agent-workbench.git
@@ -62,7 +66,7 @@ OpenAI and Anthropic adapters use official SDKs, exactly one call per model turn
 
 Structured metadata logs and real local OpenTelemetry spans expose run/step/attempt/trace IDs, usage and measured latency. Raw prompts/data are excluded from exported telemetry. SQLite remains the primary debugger. Optional local Phoenix/OTLP is described in [observability](docs/observability.md); no tracing service or cloud telemetry is enabled by default.
 
-The full local suite passed **105/105 cases in 137.63 s** at source `4b126a3`, with zero failures, errors or skips. It exercised unit contracts, process durability, real Docker boundaries, a real browser and offline goldens. This is separate from the historical benchmark above; current benchmark, media capture and independent final approval are not claimed here.
+The full local suite passed **105/105 cases in 137.63 s** at source `4b126a3`, with zero failures, errors or skips. It exercised unit contracts, process durability, real Docker boundaries, a real browser and offline goldens. This is separate from the historical benchmark above; the current benchmark and independent final approval remain pending.
 
 **Validation is local.** GitHub Actions is disabled for this private repository; no hosted CI run is claimed. The retained workflow recipe also gates every job to public repositories and requires a separate decision before use. Local checks cover quality, provider contracts, durability, sandbox boundaries, browser behavior, offline goldens and secret scanning. Missing mandatory prerequisites fail clearly. See [testing and reproduction](docs/testing.md) for commands, result artifacts and verification limits. Gitleaks scans local history/files without an account security subscription.
 

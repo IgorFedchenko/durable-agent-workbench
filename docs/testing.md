@@ -18,6 +18,12 @@ make eval
 
 `make demo` is the one-command local launch, including dependency synchronization and sandbox build. Open `http://127.0.0.1:8765`; Ctrl-C stops its server/workers. `make test` is the one-command full test check after prerequisites. Missing Docker/browser infrastructure fails rather than silently skipping mandatory checks. If your host requires job scheduling, use its command prefix through `make JOB="your-local-job-runner --" test`, with one scheduling layer per command. The application does not depend on a particular scheduler.
 
+Optional contributor hooks use an isolated launcher; pre-commit is not a project dev dependency:
+
+```sh
+uvx --python 3.12 pre-commit install
+```
+
 ## What is checked
 
 | Suite | Boundary exercised |

@@ -11,7 +11,9 @@ import sqlite3
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
+from decimal import Decimal
 from pathlib import Path
+from threading import Barrier, Lock
 
 import pytest
 from pydantic import ValidationError
@@ -221,7 +223,65 @@ def test_missing_or_rejected_verdict_rejected(store):
     assert store.report(root) is None
 
 
+def _assert_failed_reviewer_publication_boundary(store):
+    proofs = []
+    artifact = store.directory / "failed-reviewer-publication-proof.json"
+    for child_status in ["failed", "pending", "running"]:
+        root, eid, child = publication(store)
+        store.status(child, child_status)
+        root_status_before = store.run(root)["status"]
+        refusal = None
+        result = None
+        with store.ownership(root):
+            try:
+                result = store.publish(root, "child-status-pub", report(eid))
+            except BoundaryError as error:
+                refusal = str(error)
+        with sqlite3.connect(store.path) as db:
+            report_count = db.execute(
+                "SELECT count(*) FROM reports WHERE root_id=?", (root,)
+            ).fetchone()[0]
+            total_calls = db.execute(
+                "SELECT count(*) FROM calls WHERE run_id=? AND name='publish'", (root,)
+            ).fetchone()[0]
+            completed_calls = db.execute(
+                "SELECT count(*) FROM calls WHERE run_id=? "
+                "AND name='publish' AND state='completed'",
+                (root,),
+            ).fetchone()[0]
+            root_status = db.execute("SELECT status FROM runs WHERE id=?", (root,)).fetchone()[0]
+        proof = {
+            "root_id": root,
+            "child_id": child,
+            "child_status": child_status,
+            "accepted_verdict": store.verdict(root),
+            "publication_result": result,
+            "refusal": refusal,
+            "report_count": report_count,
+            "completed_publication_calls": completed_calls,
+            "total_publication_calls": total_calls,
+            "root_status_before": root_status_before,
+            "child_status_after": store.run(child)["status"],
+            "root_status": root_status,
+            "actual_process_imports": _transport_import_identity(),
+        }
+        proofs.append(proof)
+        artifact.write_text(json.dumps(proofs, indent=2))
+        assert proof["child_status_after"] == child_status
+        if child_status == "failed":
+            assert refusal == "publication rejects a failed reviewer child" and result is None
+            assert report_count == completed_calls == total_calls == 0
+            assert root_status == root_status_before
+        else:
+            # Valid verdict committed before child-status persistence is a
+            # supported crash window; do not require terminal completed here.
+            assert refusal is None and result == {"published": True, "report_key": root}
+            assert report_count == completed_calls == total_calls == 1
+            assert root_status == "completed"
+
+
 def test_evidence_root_dataset_verdict_binding(store):
+    _assert_failed_reviewer_publication_boundary(store)
     root, eid, child = publication(store)
     other = raw_run(store)
     with pytest.raises(BoundaryError):
@@ -266,7 +326,122 @@ def test_publication_numeric_fields_complete(store):
             report("ev-one", value)
 
 
+def _owned_publication_process(directory, root, eid, first, connection):
+    store = Store(Path(directory))
+    identical_publish_entries = 0
+    identity = _transport_import_identity()
+    try:
+        if first:
+            with store.ownership(root):
+                connection.send({"phase": "owned", "identity": identity})
+                assert connection.recv() == "publish"
+                identical_publish_entries += 1
+                result = store.publish(root, "process-pub", report(eid))
+            connection.send(
+                {
+                    "phase": "published",
+                    "result": result,
+                    "identical_publish_entries": identical_publish_entries,
+                    "identity": identity,
+                }
+            )
+        else:
+            try:
+                with store.ownership(root):
+                    connection.send({"phase": "unexpected-owned", "identity": identity})
+                    identical_publish_entries += 1
+                    store.publish(root, "process-pub", report(eid))
+            except BusyRun:
+                connection.send(
+                    {
+                        "phase": "busy",
+                        "identical_publish_entries": identical_publish_entries,
+                        "identity": identity,
+                    }
+                )
+            assert connection.recv() == "retry"
+            with store.ownership(root):
+                identical_publish_entries += 1
+                result = store.publish(root, "process-pub", report(eid))
+                try:
+                    store.publish(root, "process-pub", report(eid, 174))
+                except BoundaryError as error:
+                    changed_refusal = str(error)
+                else:
+                    raise AssertionError("changed publication arguments accepted")
+            connection.send(
+                {
+                    "phase": "replayed",
+                    "result": result,
+                    "changed_arguments_refused": changed_refusal,
+                    "altered_argument_publish_attempts": 1,
+                    "identical_publish_entries": identical_publish_entries,
+                    "identity": identity,
+                }
+            )
+    finally:
+        connection.close()
+
+
+def _assert_two_process_publication(store):
+    root, eid, _ = publication(store)
+    a, ap = _spawn(_owned_publication_process, str(store.directory), root, eid, True)
+    b = bp = None
+    try:
+        assert ap.poll(15)
+        owned = ap.recv()
+        assert owned["phase"] == "owned" and owned["identity"]["pid"] == a.pid
+        b, bp = _spawn(_owned_publication_process, str(store.directory), root, eid, False)
+        assert bp.poll(15)
+        busy = bp.recv()
+        assert busy["phase"] == "busy" and busy["identical_publish_entries"] == 0
+        assert busy["identity"]["pid"] == b.pid and a.pid != b.pid
+        ap.send("publish")
+        assert ap.poll(15)
+        published = ap.recv()
+        a.join(5)
+        assert a.exitcode == 0
+        bp.send("retry")
+        assert bp.poll(15)
+        replayed = bp.recv()
+        b.join(5)
+        assert b.exitcode == 0
+        with sqlite3.connect(store.path) as db:
+            reports = db.execute(
+                "SELECT call_id,body FROM reports WHERE root_id=?", (root,)
+            ).fetchall()
+            calls = db.execute(
+                "SELECT state,result FROM calls WHERE run_id=? AND call_id='process-pub'", (root,)
+            ).fetchall()
+        proof = {
+            "root_id": root,
+            "owned": owned,
+            "losing_owner": busy,
+            "published": published,
+            "replayed": replayed,
+            "independent_sqlite_reports": reports,
+            "independent_sqlite_calls": calls,
+        }
+        (store.directory / "two-process-publication-proof.json").write_text(
+            json.dumps(proof, indent=2)
+        )
+        assert published["result"] == replayed["result"] == {"published": True, "report_key": root}
+        assert published["identical_publish_entries"] == replayed["identical_publish_entries"] == 1
+        assert replayed["changed_arguments_refused"]
+        assert replayed["altered_argument_publish_attempts"] == 1
+        assert len(reports) == len(calls) == 1
+        assert reports[0][0] == "process-pub" and calls[0][0] == "completed"
+        assert json.loads(calls[0][1]) == published["result"]
+    finally:
+        for proc, pipe in [(a, ap), (b, bp)]:
+            if proc is not None and proc.is_alive():
+                _kill(proc)
+            if pipe is not None:
+                pipe.close()
+
+
 def test_publication_repeated_and_contended(store):
+    _assert_two_process_publication(store)
     root, eid, _ = publication(store)
     with ThreadPoolExecutor(2) as pool:
         results = list(pool.map(lambda _: store.publish(root, "pub", report(eid)), range(4)))
@@ -317,7 +492,138 @@ def test_publication_crash_atomicity(store):
             pipe.close()
 
 
+def _assert_parent_child_transport_races(store):
+    proofs = []
+    artifact = store.directory / "transport-race-evidence.json"
+    for ceiling in ["cost", "tokens", "steps"]:
+        _assert_parent_child_transport_race(store, ceiling, proofs, artifact)
+
+
+def _assert_parent_child_transport_race(store, ceiling, proofs, artifact):
+    # Supplemental synthetic transport contract: real context admission needs
+    # more than the original 10-input-token reservation-only fixture below.
+    input_cap, output_cap = 10000, 10
+    token_reservation = input_cap + output_cap
+    send_cost = (
+        Decimal(input_cap) * Decimal("1") + Decimal(output_cap) * Decimal("2000")
+    ) / Decimal(1000000)
+    assert send_cost == Decimal("0.030")
+    limits = Limits(
+        input_token_cap=input_cap,
+        output_token_cap=output_cap,
+        input_price_per_million=1.0,
+        output_price_per_million=2000.0,
+        max_cost_usd=0.05 if ceiling == "cost" else 1.0,
+        max_tokens=token_reservation if ceiling == "tokens" else 100000,
+        max_steps=1 if ceiling == "steps" else 24,
+        provider_attempts=1,
+    )
+    root = raw_run(store, live=True, limits=limits)
+    child = raw_run(store, live=True, limits=limits, parent=root)
+    config = RunConfig.model_validate(store.run(root)["config"])
+    engine = Engine(store)
+    system, messages = "policy", [{"role": "user", "content": "q"}]
+    roles = {"parent": root, "reviewer": child}
+    # These are real admission checks; _provider_turn also executes its own
+    # unchanged admission gate after the two-party start barrier.
+    estimates = {role: engine.admit_provider(config, system, messages, role) for role in roles}
+    admission_start = Barrier(2)
+    counter_lock = Lock()
+    sends = []
+
+    class FakePaid:
+        def turn(self, *args, **kwargs):
+            # This counter observes actual Engine -> FakePaid invocations,
+            # independently of the product's reservation/settlement ledger.
+            with counter_lock:
+                send = {
+                    "role": kwargs["role"],
+                    "run_id": roles[kwargs["role"]],
+                    "owner_pid": os.getpid(),
+                    "simulated_billed_cost_usd": str(send_cost),
+                }
+                sends.append(send)
+            assert kwargs["output_cap"] == output_cap
+            with pytest.raises(BusyRun):
+                with store.ownership(root):
+                    pytest.fail("root ownership was released during transport")
+            send["root_flock_observed"] = True
+            return Turn(
+                decision=ToolCall(
+                    id="fake-paid-race", name="read_evidence", arguments={"evidence_id": "ev-x"}
+                ),
+                # Full configured usage preserves the entire synthetic
+                # charge after settlement; these are not real API charges.
+                usage=Usage(input_tokens=input_cap, output_tokens=output_cap),
+            )
+
+    provider = FakePaid()
+
+    def dispatch(run_id, role):
+        # Never wait for two sends: a correct budget gate refuses one.
+        admission_start.wait(timeout=10)
+        try:
+            engine._provider_turn(
+                root_id=root,
+                run_id=run_id,
+                config=config,
+                provider=provider,
+                system=system,
+                messages=messages,
+                role=role,
+                index=0,
+            )
+        except BoundaryError as error:
+            return {"run_id": run_id, "error": str(error)}
+        return {"run_id": run_id, "completed": True}
+
+    try:
+        with store.ownership(root):
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                futures = [pool.submit(dispatch, run_id, role) for role, run_id in roles.items()]
+                outcomes = [future.result(timeout=25) for future in futures]
+            observed_cost = sum(
+                (Decimal(send["simulated_billed_cost_usd"]) for send in sends), Decimal(0)
+            )
+            proof = {
+                "classification": ("synthetic FakePaid transport; no network or actual API spend"),
+                "ceiling": ceiling,
+                "root_id": root,
+                "child_id": child,
+                "limits": limits.model_dump(),
+                "actual_admission_estimates": estimates,
+                "per_send_calibration": "10000*1/1000000 + 10*2000/1000000 = 0.030 USD",
+                "transport_invocations": sends,
+                "actual_send_count": len(sends),
+                "simulated_billed_cost_usd": str(observed_cost),
+                "actual_api_spend_usd": 0,
+                "outcomes": outcomes,
+            }
+            proofs.append(proof)
+            # Persist before assertions: the INSERT-removal mutant must
+            # expose its two actual sends/$0.060, not an earlier ledger check.
+            artifact.write_text(json.dumps(proofs, indent=2))
+            assert len(sends) == 1 and observed_cost == Decimal("0.030"), (
+                f"{ceiling}: actual FakePaid sends={len(sends)}, "
+                f"synthetic billed cost=${observed_cost:.3f}; expected 1/$0.030"
+            )
+            assert sum(result.get("completed", False) for result in outcomes) == 1
+            refused = [result for result in outcomes if "error" in result]
+            assert len(refused) == 1 and "ceiling" in refused[0]["error"]
+            with pytest.raises(BoundaryError, match="ceiling"):
+                engine._provider_turn(
+                    child, root, config, provider, system, messages, "reviewer", 1
+                )
+            assert len(sends) == 1 and all(send["root_flock_observed"] for send in sends)
+            proof["subsequent_dispatch_refused_without_send"] = True
+            artifact.write_text(json.dumps(proofs, indent=2))
+    finally:
+        engine.tracer_provider.shutdown()
+
+
 def test_budget_parent_child_atomic_race(store):
+    _assert_parent_child_transport_races(store)
+    # Retain the original independently constrained 10/10 reservation race.
     for ceiling in ["cost", "tokens", "steps"]:
         kwargs = {
             "max_cost_usd": 0.05 if ceiling == "cost" else 1.0,
@@ -393,7 +699,152 @@ def test_kill_after_reservation_retains_charge(store):
     _ledger_kill_test(store, False)
 
 
+def _transport_import_identity():
+    import hashlib
+
+    from agent_workbench import engine, store
+
+    paths = {"engine": engine.__file__, "store": store.__file__, "test": __file__}
+    return {
+        "pid": os.getpid(),
+        "ROOT": str(ROOT),
+        "module_paths": paths,
+        "sha256": {
+            key: hashlib.sha256(Path(path).read_bytes()).hexdigest() for key, path in paths.items()
+        },
+    }
+
+
+def _blocking_transport_worker(directory, root, connection):
+    store = Store(Path(directory))
+    engine = Engine(store)
+    config = RunConfig.model_validate(store.run(root)["config"])
+
+    class FakePaid:
+        def turn(self, *args, **kwargs):
+            receipt = {
+                "pid": os.getpid(),
+                "root_id": root,
+                "role": kwargs["role"],
+                "ledger_at_transport_entry": store.ledger(root),
+                "actual_worker_imports": _transport_import_identity(),
+                "simulated_billed_cost_usd": "0.030",
+            }
+            with (store.directory / "blocking-transport-receipts.jsonl").open("a") as stream:
+                stream.write(json.dumps(receipt) + "\n")
+                stream.flush()
+                os.fsync(stream.fileno())
+            connection.send(receipt)
+            # The parent kills this actual process before any response exists.
+            connection.recv()
+            raise AssertionError("blocking transport unexpectedly released")
+
+    try:
+        with store.ownership(root):
+            engine._provider_turn(
+                root,
+                root,
+                config,
+                FakePaid(),
+                "policy",
+                [{"role": "user", "content": "q"}],
+                "parent",
+                0,
+            )
+    finally:
+        engine.tracer_provider.shutdown()
+        connection.close()
+
+
+def _assert_blocking_transport_crash_retry(store):
+    limits = Limits(
+        input_token_cap=10000,
+        output_token_cap=10,
+        input_price_per_million=1.0,
+        output_price_per_million=2000.0,
+        max_cost_usd=0.05,
+        max_tokens=100000,
+        max_steps=24,
+        provider_attempts=1,
+    )
+    assert (Decimal(10000) * 1 + Decimal(10) * 2000) / 1000000 == Decimal("0.030")
+    root = raw_run(store, live=True, limits=limits)
+    receipt_path = store.directory / "blocking-transport-receipts.jsonl"
+    proc, pipe = _spawn(_blocking_transport_worker, str(store.directory), root)
+    try:
+        assert pipe.poll(15), "worker never entered FakePaid transport"
+        receipt = pipe.recv()
+        assert receipt["pid"] == proc.pid
+        dispatched = receipt["ledger_at_transport_entry"]
+        assert len(dispatched) == 1 and dispatched[0]["state"] == "dispatched"
+        with pytest.raises(BusyRun):
+            with store.ownership(root):
+                pytest.fail("transport worker did not hold root ownership")
+        _kill(proc)
+        replacement = Store(store.directory)
+        engine = Engine(replacement)
+        config = RunConfig.model_validate(replacement.run(root)["config"])
+
+        class RetryPaid:
+            def turn(self, *args, **kwargs):
+                # Record accidental retry before failing: sends are independent
+                # of ledger rows and remain visible under budget regressions.
+                with receipt_path.open("a") as stream:
+                    stream.write(json.dumps({"unexpected_retry_pid": os.getpid()}) + "\n")
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                raise AssertionError("second FakePaid transport invocation")
+
+        try:
+            with replacement.ownership(root):
+                replacement.mark_ambiguous(root)
+                before_retry = replacement.ledger(root)
+                with pytest.raises(BoundaryError, match="ceiling") as refused:
+                    engine._provider_turn(
+                        root,
+                        root,
+                        config,
+                        RetryPaid(),
+                        "policy",
+                        [{"role": "user", "content": "q"}],
+                        "parent",
+                        1,
+                    )
+                after_retry = replacement.ledger(root)
+            receipts = [json.loads(line) for line in receipt_path.read_text().splitlines()]
+            proof = {
+                "scope": "production mark_ambiguous + Engine._provider_turn recovery boundary",
+                "classification": "synthetic blocking FakePaid; no network or API spend",
+                "root_id": root,
+                "killed_pid": proc.pid,
+                "actual_test_process_imports": _transport_import_identity(),
+                "exitcode": proc.exitcode,
+                "transport_receipts": receipts,
+                "actual_send_count": len(receipts),
+                "ledger_before_retry": before_retry,
+                "ledger_after_retry": after_retry,
+                "retry_refusal": str(refused.value),
+                "actual_api_spend_usd": 0,
+            }
+            (store.directory / "blocking-transport-crash-proof.json").write_text(
+                json.dumps(proof, indent=2)
+            )
+            assert len(receipts) == 1 and before_retry == after_retry
+            assert len(after_retry) == 1
+            row = after_retry[0]
+            assert row["id"] == dispatched[0]["id"] and row["state"] == "ambiguous"
+            assert row["charged_tokens"] == 10010 and row["charged_cost"] == 0.03
+            assert row["actual_usage"] is None
+        finally:
+            engine.tracer_provider.shutdown()
+    finally:
+        if proc.is_alive():
+            _kill(proc)
+        pipe.close()
+
+
 def test_kill_after_dispatch_unknown_outcome(store):
+    _assert_blocking_transport_crash_retry(store)
     _ledger_kill_test(store, True)
 
 

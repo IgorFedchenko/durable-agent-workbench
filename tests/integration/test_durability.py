@@ -11,7 +11,9 @@ import sqlite3
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
+from decimal import Decimal
 from pathlib import Path
+from threading import Barrier, Lock
 
 import pytest
 from pydantic import ValidationError
@@ -317,7 +319,138 @@ def test_publication_crash_atomicity(store):
             pipe.close()
 
 
+def _assert_parent_child_transport_races(store):
+    proofs = []
+    artifact = store.directory / "transport-race-evidence.json"
+    for ceiling in ["cost", "tokens", "steps"]:
+        _assert_parent_child_transport_race(store, ceiling, proofs, artifact)
+
+
+def _assert_parent_child_transport_race(store, ceiling, proofs, artifact):
+    # Supplemental synthetic transport contract: real context admission needs
+    # more than the original 10-input-token reservation-only fixture below.
+    input_cap, output_cap = 10000, 10
+    token_reservation = input_cap + output_cap
+    send_cost = (
+        Decimal(input_cap) * Decimal("1") + Decimal(output_cap) * Decimal("2000")
+    ) / Decimal(1000000)
+    assert send_cost == Decimal("0.030")
+    limits = Limits(
+        input_token_cap=input_cap,
+        output_token_cap=output_cap,
+        input_price_per_million=1.0,
+        output_price_per_million=2000.0,
+        max_cost_usd=0.05 if ceiling == "cost" else 1.0,
+        max_tokens=token_reservation if ceiling == "tokens" else 100000,
+        max_steps=1 if ceiling == "steps" else 24,
+        provider_attempts=1,
+    )
+    root = raw_run(store, live=True, limits=limits)
+    child = raw_run(store, live=True, limits=limits, parent=root)
+    config = RunConfig.model_validate(store.run(root)["config"])
+    engine = Engine(store)
+    system, messages = "policy", [{"role": "user", "content": "q"}]
+    roles = {"parent": root, "reviewer": child}
+    # These are real admission checks; _provider_turn also executes its own
+    # unchanged admission gate after the two-party start barrier.
+    estimates = {role: engine.admit_provider(config, system, messages, role) for role in roles}
+    admission_start = Barrier(2)
+    counter_lock = Lock()
+    sends = []
+
+    class FakePaid:
+        def turn(self, *args, **kwargs):
+            # This counter observes actual Engine -> FakePaid invocations,
+            # independently of the product's reservation/settlement ledger.
+            with counter_lock:
+                send = {
+                    "role": kwargs["role"],
+                    "run_id": roles[kwargs["role"]],
+                    "owner_pid": os.getpid(),
+                    "simulated_billed_cost_usd": str(send_cost),
+                }
+                sends.append(send)
+            assert kwargs["output_cap"] == output_cap
+            with pytest.raises(BusyRun):
+                with store.ownership(root):
+                    pytest.fail("root ownership was released during transport")
+            send["root_flock_observed"] = True
+            return Turn(
+                decision=ToolCall(
+                    id="fake-paid-race", name="read_evidence", arguments={"evidence_id": "ev-x"}
+                ),
+                # Full configured usage preserves the entire synthetic
+                # charge after settlement; these are not real API charges.
+                usage=Usage(input_tokens=input_cap, output_tokens=output_cap),
+            )
+
+    provider = FakePaid()
+
+    def dispatch(run_id, role):
+        # Never wait for two sends: a correct budget gate refuses one.
+        admission_start.wait(timeout=10)
+        try:
+            engine._provider_turn(
+                root_id=root,
+                run_id=run_id,
+                config=config,
+                provider=provider,
+                system=system,
+                messages=messages,
+                role=role,
+                index=0,
+            )
+        except BoundaryError as error:
+            return {"run_id": run_id, "error": str(error)}
+        return {"run_id": run_id, "completed": True}
+
+    try:
+        with store.ownership(root):
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                futures = [pool.submit(dispatch, run_id, role) for role, run_id in roles.items()]
+                outcomes = [future.result(timeout=25) for future in futures]
+            observed_cost = sum(
+                (Decimal(send["simulated_billed_cost_usd"]) for send in sends), Decimal(0)
+            )
+            proof = {
+                "classification": ("synthetic FakePaid transport; no network or actual API spend"),
+                "ceiling": ceiling,
+                "root_id": root,
+                "child_id": child,
+                "limits": limits.model_dump(),
+                "actual_admission_estimates": estimates,
+                "per_send_calibration": "10000*1/1000000 + 10*2000/1000000 = 0.030 USD",
+                "transport_invocations": sends,
+                "actual_send_count": len(sends),
+                "simulated_billed_cost_usd": str(observed_cost),
+                "actual_api_spend_usd": 0,
+                "outcomes": outcomes,
+            }
+            proofs.append(proof)
+            # Persist before assertions: the INSERT-removal mutant must
+            # expose its two actual sends/$0.060, not an earlier ledger check.
+            artifact.write_text(json.dumps(proofs, indent=2))
+            assert len(sends) == 1 and observed_cost == Decimal("0.030"), (
+                f"{ceiling}: actual FakePaid sends={len(sends)}, "
+                f"synthetic billed cost=${observed_cost:.3f}; expected 1/$0.030"
+            )
+            assert sum(result.get("completed", False) for result in outcomes) == 1
+            refused = [result for result in outcomes if "error" in result]
+            assert len(refused) == 1 and "ceiling" in refused[0]["error"]
+            with pytest.raises(BoundaryError, match="ceiling"):
+                engine._provider_turn(
+                    child, root, config, provider, system, messages, "reviewer", 1
+                )
+            assert len(sends) == 1 and all(send["root_flock_observed"] for send in sends)
+            proof["subsequent_dispatch_refused_without_send"] = True
+            artifact.write_text(json.dumps(proofs, indent=2))
+    finally:
+        engine.tracer_provider.shutdown()
+
+
 def test_budget_parent_child_atomic_race(store):
+    _assert_parent_child_transport_races(store)
+    # Retain the original independently constrained 10/10 reservation race.
     for ceiling in ["cost", "tokens", "steps"]:
         kwargs = {
             "max_cost_usd": 0.05 if ceiling == "cost" else 1.0,

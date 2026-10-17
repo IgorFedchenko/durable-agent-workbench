@@ -526,6 +526,22 @@ def test_kill_after_reservation_retains_charge(store):
     _ledger_kill_test(store, False)
 
 
+def _transport_import_identity():
+    import hashlib
+
+    from agent_workbench import engine, store
+
+    paths = {"engine": engine.__file__, "store": store.__file__, "test": __file__}
+    return {
+        "pid": os.getpid(),
+        "ROOT": str(ROOT),
+        "module_paths": paths,
+        "sha256": {
+            key: hashlib.sha256(Path(path).read_bytes()).hexdigest() for key, path in paths.items()
+        },
+    }
+
+
 def _blocking_transport_worker(directory, root, connection):
     store = Store(Path(directory))
     engine = Engine(store)
@@ -538,6 +554,7 @@ def _blocking_transport_worker(directory, root, connection):
                 "root_id": root,
                 "role": kwargs["role"],
                 "ledger_at_transport_entry": store.ledger(root),
+                "actual_worker_imports": _transport_import_identity(),
                 "simulated_billed_cost_usd": "0.030",
             }
             with (store.directory / "blocking-transport-receipts.jsonl").open("a") as stream:
@@ -627,6 +644,7 @@ def _assert_blocking_transport_crash_retry(store):
                 "classification": "synthetic blocking FakePaid; no network or API spend",
                 "root_id": root,
                 "killed_pid": proc.pid,
+                "actual_test_process_imports": _transport_import_identity(),
                 "exitcode": proc.exitcode,
                 "transport_receipts": receipts,
                 "actual_send_count": len(receipts),

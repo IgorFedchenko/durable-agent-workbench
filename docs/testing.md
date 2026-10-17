@@ -18,6 +18,12 @@ make eval
 
 `make demo` is the one-command local launch, including dependency synchronization and sandbox build. Open `http://127.0.0.1:8765`; Ctrl-C stops its server/workers. `make test` is the one-command full test check after prerequisites. Missing Docker/browser infrastructure fails rather than silently skipping mandatory checks. If your host requires job scheduling, use its command prefix through `make JOB="your-local-job-runner --" test`, with one scheduling layer per command. The application does not depend on a particular scheduler.
 
+Optional contributor hooks use an isolated launcher; pre-commit is not a project dev dependency:
+
+```sh
+uvx --python 3.12 pre-commit install
+```
+
 ## What is checked
 
 | Suite | Boundary exercised |
@@ -36,6 +42,15 @@ The retained hosted workflow recipe shows the five-suite report layout and `scri
 
 ## Visual evidence and limits
 
-After prerequisites, `make capture` drives the real browser/server/engine/Docker path and writes `docs/demo.gif`. A GIF is evidence only after capture succeeds; this documentation does not claim an existing recording. No screenshots or benchmark numbers are fabricated.
+After prerequisites, `make capture` drives the real browser/server/engine/Docker path. A successful full journey writes `docs/demo.gif` and `docs/portfolio-cover.png`; failure exits nonzero without publishing these assets. Fresh state and diagnostics remain under a unique ignored `.workbench/capture-*/` directory, including server logs/PID status, browser trace, a failure screenshot when available and read-only run snapshots. This retained project-local state is a diagnostic choice; it does not establish the cause of an earlier capture failure.
+
+To select fresh retained directories and a free loopback port explicitly:
+
+```sh
+uv run python scripts/capture_demo.py --data-dir .workbench/my-capture-data \
+  --evidence-dir .workbench/my-capture-evidence --port 8766
+```
+
+Both directories must not already exist. The script starts and stops only its own server and refuses an occupied port. A GIF is evidence only after capture succeeds; this documentation does not claim an existing recording. No screenshots or benchmark numbers are fabricated.
 
 The suite evaluates systems behavior with authored responses. It does not measure live model reasoning, production provider availability, cloud security, distributed execution or general truth of arbitrary generated analysis. See [threat model](threat-model.md), [providers](providers.md) and [architecture](architecture.md).

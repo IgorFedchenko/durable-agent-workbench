@@ -9,7 +9,7 @@ A local agent workflow that turns a synthetic retail question into isolated Pyth
 
 ```sh
 # Prerequisites: Docker Engine/Desktop with buildx, uv, Python 3.12+, local Linux/macOS filesystem.
-git clone git@github.com:IgorFedchenko/durable-agent-workbench.git
+git clone https://github.com/IgorFedchenko/durable-agent-workbench.git
 cd durable-agent-workbench
 make demo
 # Open http://127.0.0.1:8765. Ctrl-C stops the server and its workers.
@@ -61,6 +61,8 @@ One local scripted systems benchmark at source `f030712` produced **10/10 expect
 OpenAI and Anthropic adapters use official SDKs, exactly one call per model turn, preserved call/result IDs and disabled SDK retries. Their local transport-contract tests and the live judge are described in [testing](docs/testing.md); live integrations remain **live-unverified**. Live use requires explicit CLI opt-in, environment-only key, exact model, configured prices and output/spend bounds. Unknown usage retains a full durable reservation. [Provider commands and cost limits](docs/providers.md).
 
 Structured metadata logs and real local OpenTelemetry spans expose run/step/attempt/trace IDs, usage and measured latency. Raw prompts/data are excluded from exported telemetry. SQLite remains the primary debugger. Optional local Phoenix/OTLP is described in [observability](docs/observability.md); no tracing service or cloud telemetry is enabled by default.
+
+The full local suite passed **105/105 cases in 137.63 s** at source `4b126a3`, with zero failures, errors or skips. It exercised unit contracts, process durability, real Docker boundaries, a real browser and offline goldens. This is separate from the historical benchmark above; current benchmark, media capture and independent final approval are not claimed here.
 
 **Validation is local.** GitHub Actions is disabled for this private repository; no hosted CI run is claimed. The retained workflow recipe also gates every job to public repositories and requires a separate decision before use. Local checks cover quality, provider contracts, durability, sandbox boundaries, browser behavior, offline goldens and secret scanning. Missing mandatory prerequisites fail clearly. See [testing and reproduction](docs/testing.md) for commands, result artifacts and verification limits. Gitleaks scans local history/files without an account security subscription.
 

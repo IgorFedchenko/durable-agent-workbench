@@ -26,13 +26,13 @@ uvx --python 3.12 pre-commit install
 
 ## What is checked
 
-| Suite | Boundary exercised |
-| --- | --- |
-| `tests/unit` | Provider-shaped transport contracts, validation, budgets and state invariants. |
-| `tests/integration` | Real process termination/recovery, root ownership and persisted dispatch/publication. |
-| `tests/sandbox` | Real Docker resource, filesystem and network restrictions. |
-| `tests/e2e` | Real browser against the local HTTP debugger and execution path. |
-| `tests/evals` | Frozen synthetic scenarios and independent numeric goldens. |
+| Suite | Executed cases | Boundary exercised |
+| --- | --- | --- |
+| `tests/unit` | 28 | Provider-shaped transport contracts, validation, budgets and state invariants. |
+| `tests/integration` | 45 | Real process termination/recovery, root ownership and persisted dispatch/publication. |
+| `tests/sandbox` | 12 | Real Docker resource, filesystem and network restrictions. |
+| `tests/e2e` | 9 | Real browser against the local HTTP debugger and execution path. |
+| `tests/evals` | 11 | Frozen synthetic scenarios and independent numeric goldens. |
 
 `make quality` checks Ruff lint/format and strict mypy. `make secrets` verifies the detector with an ephemeral synthetic positive control, then scans Git history and the working tree with redacted Gitleaks output. Test outcomes are recorded in `.workbench/test-results/all.xml`; skips and unexpected passes cannot substitute for the required executed inventory.
 
@@ -40,11 +40,13 @@ uvx --python 3.12 pre-commit install
 
 The retained hosted workflow recipe shows the five-suite report layout and `scripts/check_acceptance.py` verifies exact job/parameter identities plus a fresh benchmark. A single full-suite JUnit file is useful local evidence but is not that five-report input layout. GitHub Actions is disabled while this repository is private, and every recipe job has a public-repository guard. No hosted CI execution or green badge is claimed. Optional CodeQL and live-smoke recipes also require a public repository and explicit manual opt-in; no live credentials are connected. Dependency-update automation is retained as an [inactive Dependabot template](examples/dependabot.yml), outside GitHub’s active configuration path. Activate it only after general review and an explicit public-repository decision. Existing dependency PRs and branches are preserved.
 
-## Local baseline and budget-test scope
+## Executed local baseline and budget-test scope
 
-The full 105-case suite passed at source `f030712` in 129.22 seconds. The separate [scripted benchmark](evaluation.md#measured-local-baseline) produced ten expected outcomes and nine reports. These are recorded baselines, not a claim that later revisions or independent final verification have passed.
+The full suite passed **105/105 cases in 137.63 seconds** at source `4b126a399edb4426d1392f2d18c641a1de8e479a`, with zero failures, errors or skips. All five groups above executed, including real Docker and browser checks. The sandbox image was `sha256:b299a6a235d150e76d18e58b4d80a1a93cad4a2389940c0a21bbb955b72e163a`, running as UID 65532. Reproduce after prerequisites with `make test`. Independent final approval remains pending; this result does not establish a pass for changed product or test source.
 
-The parent/child budget race test also exercises actual Engine admission into a local `FakePaid` provider and counts invocations across cost, token and step limits. Its Decimal $0.030 charge is synthetic accounting; it makes no external HTTP/provider call and spends $0 in actual API fees. This strengthens the SQLite reservation-race check with an Engine dispatch observation. A separate crash check covers the production `Store.mark_ambiguous` + `Engine._provider_turn` recovery boundary, rather than the whole `Engine.resume` journey. A spawned worker enters a blocking local `FakePaid`, fsyncs its transport receipt, and is killed with SIGKILL (exit −9) before any response. The replacement keeps the full unknown charge (10,010 reserved tokens and synthetic $0.030), refuses a further dispatch specifically on the budget ceiling, and leaves the ledger unchanged with exactly one recorded invocation. This is local transport instrumentation, not live HTTP or actual spending. Targeted checks passed; final restored-suite and mutation verification remain pending. Live SDK adapters and live judging remain live-unverified.
+The separate [historical scripted benchmark](evaluation.md#measured-local-baseline) ran at `f030712` and produced ten expected outcomes and nine reports. Its raw JSON is unchanged; no newer benchmark result is claimed here.
+
+The parent/child budget race test also exercises actual Engine admission into a local `FakePaid` provider and counts invocations across cost, token and step limits. Its Decimal $0.030 charge is synthetic accounting; it makes no external HTTP/provider call and spends $0 in actual API fees. This strengthens the SQLite reservation-race check with an Engine dispatch observation. A separate crash check covers the production `Store.mark_ambiguous` + `Engine._provider_turn` recovery boundary, rather than the whole `Engine.resume` journey. A spawned worker enters a blocking local `FakePaid`, fsyncs its transport receipt, and is killed with SIGKILL (exit −9) before any response. The replacement keeps the full unknown charge (10,010 reserved tokens and synthetic $0.030), refuses a further dispatch specifically on the budget ceiling, and leaves the ledger unchanged with exactly one recorded invocation. This is local transport instrumentation, not live HTTP or actual spending. Targeted checks and the full suite at `4b126a3` passed; independent final approval remains pending. Live SDK adapters and live judging remain live-unverified.
 
 ## Focused publication and context regressions
 
@@ -52,11 +54,11 @@ A focused reviewer-binding check passed with an accepted verdict followed by an 
 
 Two focused process/context checks also passed. Separate publisher processes exercise root-lock contention: the losing owner enters publication zero times, then replays the single committed report after ownership becomes available; changed arguments reject. The context check captures actual `Engine._execute` provider inputs before and after real compaction, positively locating hostile CSV, evidence and replayed synthetic error content in untrusted messages while checking trusted policy/tool boundaries. Its failed tool result is seeded and replayed; it does not generate a Docker error or test a live model's resistance.
 
-These targeted results do not establish a final full-suite or benchmark pass for the integrated source. The measured baseline above remains tied to `f030712`.
+These focused checks are also included in the 105-case pass at `4b126a3`. The benchmark measurements remain tied to `f030712`; current benchmark and media results are separate gates.
 
 ## Visual evidence and limits
 
-After prerequisites, `make capture` drives the real browser/server/engine/Docker path. A successful full journey writes `docs/demo.gif` and `docs/portfolio-cover.png`; failure exits nonzero without publishing these assets. Fresh state and diagnostics remain under a unique ignored `.workbench/capture-*/` directory, including server logs/PID status, browser trace, a failure screenshot when available and read-only run snapshots. This retained project-local state is a diagnostic choice; it does not establish the cause of an earlier capture failure.
+After prerequisites, `make capture` drives the real browser/server/engine/Docker path. A successful full journey writes `docs/demo.gif` and `docs/portfolio-cover.png`; failure exits nonzero without publishing these assets. Fresh state and diagnostics remain under a unique ignored `.workbench/capture-*/` directory, including server logs/PID status, browser trace, a failure screenshot when available and read-only run snapshots.
 
 To select fresh retained directories and a free loopback port explicitly:
 

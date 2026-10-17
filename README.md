@@ -25,6 +25,8 @@ Try **Error repair + resume**: run the example, expand the deliberately failed a
 
 The real-browser capture command is `make capture` after `uv run playwright install chromium`. Capture uses the actual local server/engine/Docker path and writes `docs/demo.gif`; no UI frames are fabricated.
 
+## Architecture
+
 ```mermaid
 flowchart LR
     UI[Loopback UI / CLI] --> Owner[Root lifetime flock]
@@ -62,12 +64,21 @@ The optional generic `JOB` Make variable accepts an external command prefix for 
 
 One local scripted systems benchmark at source `f075ab8` produced **10/10 expected outcomes, 9 published reports and $0 actual API spend**. Summed scenario wall time was **7.439 s**, with a **1.442 s** slowest case; maxima were **13 parent/child execution steps** and **1,620 authored synthetic tokens** per case. These host-specific measurements include real Docker and recovery, and do not measure model accuracy or provider latency. Frozen limits remain 24 steps, 20,000 synthetic tokens and 180 seconds per case. [Raw measurements and scope](docs/evaluation.md#measured-local-baseline). Reproduce with `make eval`.
 
+## Integration status
+
+| Status | Components |
+| --- | --- |
+| Runs locally | Docker Python tools, SQLite recovery/evidence, reviewer workflow, HTTP debugger and charts. |
+| Scripted | Default model responses, reviewer decisions, token counts and offline judge fixtures. |
+| Implemented, live-unverified | OpenAI and Anthropic adapters and live rubric judge. |
+| Optional, off by default | Local Phoenix/OTLP tracing; live calls require separate approval. |
+
 OpenAI and Anthropic adapters use official SDKs, exactly one call per model turn, preserved call/result IDs and disabled SDK retries. Their local transport-contract tests and the live judge are described in [testing](docs/testing.md); live integrations remain **live-unverified**. Live use requires explicit CLI opt-in, environment-only key, exact model, configured prices and output/spend bounds. Unknown usage retains a full durable reservation. [Provider commands and cost limits](docs/providers.md).
 
 Structured metadata logs and real local OpenTelemetry spans expose run/step/attempt/trace IDs, usage and measured latency. Raw prompts/data are excluded from exported telemetry. SQLite remains the primary debugger. Optional local Phoenix/OTLP is described in [observability](docs/observability.md); no tracing service or cloud telemetry is enabled by default.
 
 The full local suite passed **105/105 cases in 137.63 s** at source `4b126a3`, with zero failures, errors or skips. It exercised unit contracts, process durability, real Docker boundaries, a real browser and offline goldens. The benchmark above ran separately at `f075ab8` with the same runtime source fingerprint.
 
-**Validation is local.** GitHub Actions is disabled for this private repository; no hosted CI run is claimed. The retained workflow recipe also gates every job to public repositories and requires a separate decision before use. Local checks cover quality, provider contracts, durability, sandbox boundaries, browser behavior, offline goldens and secret scanning. Missing mandatory prerequisites fail clearly. See [testing and reproduction](docs/testing.md) for commands, result artifacts and verification limits. Gitleaks scans local history/files without an account security subscription.
+**Validation is local.** GitHub Actions remains disabled after publication; no hosted CI run is claimed. The retained workflow recipe also gates every job to public repositories and requires a separate decision before use. Local checks cover quality, provider contracts, durability, sandbox boundaries, browser behavior, offline goldens and secret scanning. Missing mandatory prerequisites fail clearly. See [testing and reproduction](docs/testing.md) for commands, result artifacts and verification limits. Gitleaks scans local history/files without an account security subscription.
 
 See [decision index](docs/decisions.md), [design decisions](docs/adr/001-explicit-state-machine.md), [Docker boundary](docs/adr/002-docker-boundary.md), [evaluation validity](docs/adr/003-scripted-evaluation.md), [changelog](CHANGELOG.md) and [MIT license](LICENSE).

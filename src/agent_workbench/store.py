@@ -330,6 +330,17 @@ class Store:
         args_hash = object_hash(original_arguments if original_arguments is not None else body)
         self.checkpoint("publication_before_transaction", {"root_id": root_id})
         with self.transaction() as db:
+            # A committed verdict survives a crash before child completion, but
+            # an explicitly failed reviewer cannot authorize new publication.
+            child = db.execute(
+                "SELECT child.root_id,child.parent_id,child.status FROM verdicts AS verdict "
+                "JOIN runs AS child ON child.id=verdict.child_id WHERE verdict.root_id=?",
+                (root_id,),
+            ).fetchone()
+            if child is None or child["root_id"] != root_id or child["parent_id"] != root_id:
+                raise BoundaryError("publication requires the root's recorded reviewer child")
+            if child["status"] == "failed":
+                raise BoundaryError("publication rejects a failed reviewer child")
             call = db.execute(
                 "SELECT * FROM calls WHERE run_id=? AND call_id=?", (root_id, call_id)
             ).fetchone()

@@ -432,17 +432,33 @@ def _assert_actual_engine_injection_context(store):
             and m["content"].get("data", {}).get("note") == attacker
             for m in captures[4]["messages"]
         )
+
+        def decoded_strings(value):
+            if isinstance(value, str):
+                yield value
+            elif isinstance(value, dict):
+                for key, item in value.items():
+                    yield from decoded_strings(key)
+                    yield from decoded_strings(item)
+            elif isinstance(value, list):
+                for item in value:
+                    yield from decoded_strings(item)
+
+        def assert_no_attack(value):
+            leaves = list(decoded_strings(value))
+            assert not any(
+                marker in leaf for marker in ("ERROR_ATTACK", csv_attack) for leaf in leaves
+            )
+
         trusted_system = (ROOT / "prompts/parent-v1.txt").read_text()
         for capture in captures:
             assert capture["system"] == trusted_system and capture["tools"] == tools("parent")
             assert capture["output_cap"] == config.limits.output_token_cap
-            assert attacker not in capture["system"] and csv_attack not in capture["system"]
-            assert attacker not in json.dumps(capture["tools"])
+            assert_no_attack(capture["system"])
+            assert_no_attack(capture["tools"])
             for message in capture["messages"]:
-                if message["role"] == "user":
-                    assert attacker not in json.dumps(message) and csv_attack not in json.dumps(
-                        message
-                    )
+                if message.get("role", "").strip().lower() in {"system", "developer", "user"}:
+                    assert_no_attack(message)
         assert store.run(root)["config"] == config.model_dump()
         assert store.evidence(root, ids[1])["body"]["total"] == 175
         with store.connect() as db:
@@ -545,13 +561,14 @@ def test_public_product_portable_boundary():
         + list((ROOT / "docs").rglob("*.md"))
         + [ROOT / "README.md", ROOT / "Makefile"]
     )
+    import re
+
+    # Public files must not depend on a particular user's home directory.
+    local_home = re.compile(r"(?:/(?:Users|home)/[^/\s]+|[A-Za-z]:\\Users\\)")
     for path in paths:
-        text = path.read_text()
-        assert (
-            "/Users/igor" not in text
-            and "studio-heavy-run" not in text
-            and "ClaudeBoard" not in text
-        )
+        assert not local_home.search(path.read_text()), path.relative_to(ROOT)
+    # A machine-specific scheduler may be supplied, but is never required.
+    assert "JOB ?=\n" in (ROOT / "Makefile").read_text()
 
 
 def test_offline_judge_rubric_schema_provenance(store):
